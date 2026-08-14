@@ -218,7 +218,7 @@ app.post("/api/verify-key", async (req, res) => {
 
   try {
     if (provider === "gemini") {
-      const selectedModel = model && model.trim() ? model.trim() : "gemini-1.5-flash";
+      const selectedModel = model && model.trim() ? model.trim() : "gemini-3.5-flash-lite";
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`;
       const response = await axios.post(
         url,

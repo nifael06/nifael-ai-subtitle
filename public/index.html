@@ -727,7 +727,7 @@
       <div class="form-group" id="modelGroup">
         <label for="modelInput" id="modelLabel">Custom Model ID</label>
         <div class="control-wrap">
-          <input type="text" id="modelInput" placeholder="e.g. gemini-1.5-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
+          <input type="text" id="modelInput" placeholder="e.g. gemini-3.5-flash-lite" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
         </div>
         <div class="hint" id="modelHint">Leave blank for default model, or specify any model ID.</div>
       </div>
@@ -882,8 +882,8 @@
 
         if (engine === "gemini") {
           keyLabel.textContent = "Google Gemini API Key";
-          modelInput.placeholder = "e.g. gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash";
-          modelHint.textContent = "Default: gemini-1.5-flash. You can specify any Gemini model ID.";
+          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-2.5-flash, gemini-2.0-flash";
+          modelHint.textContent = "Default: gemini-3.5-flash-lite. You can specify any Gemini model ID.";
         } else if (engine === "openai") {
           keyLabel.textContent = "OpenAI API Key";
           modelInput.placeholder = "e.g. gpt-4o-mini, gpt-4o";

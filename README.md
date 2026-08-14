@@ -8,7 +8,7 @@ A high-performance, AI-powered subtitle translation add-on for [Stremio](https:/
 
 - **🌐 Multi-Engine AI Translation**:
   - **Google Translate**: Fast, free, zero-configuration translation.
-  - **Google Gemini**: High-context AI translation with custom model support (`gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-2.5-flash`, etc.).
+  - **Google Gemini**: High-context AI translation with custom model support (`gemini-3.5-flash-lite`, `gemini-2.5-flash`, `gemini-2.0-flash`, etc.).
   - **OpenAI**: Precise dialogue translation powered by GPT models (`gpt-4o-mini`, `gpt-4o`, etc.).
   - **DeepL API**: Professional-grade translation accuracy with 1-to-1 subtitle alignment.
 - **📚 Multi-Provider Subtitle Aggregation**:

@@ -46,7 +46,7 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel) {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) return await translateWithGoogle(textBatch, targetLang);
 
-    const model = customModel || "gemini-1.5-flash";
+    const model = customModel || "gemini-3.5-flash-lite";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
     const prompt = `You are a professional movie subtitle translator. Translate the following subtitle batch into language code '${targetLang}'. Keep the exact same '<<<SEG>>>' separators untouched between subtitle lines. Do not add any conversational text, explanations, or markdown formatting, output ONLY the translated lines:\n\n${textBatch}`;
 
