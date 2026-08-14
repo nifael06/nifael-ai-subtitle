@@ -199,7 +199,7 @@ async function translateChunk(chunk, targetLang, engine, apiKey, customModel) {
 /**
  * Master concurrent batch translator dispatcher (5x-8x speedup)
  */
-async function translateCues(cues, targetLang = "ms", engine = "google", apiKey = "", customModel = "") {
+async function translateCues(cues, targetLang = "en", engine = "google", apiKey = "", customModel = "") {
   console.log(`[nifael AI] Translating ${cues.length} cues to '${targetLang}' using: [${engine.toUpperCase()}] Model: [${customModel || "default"}]`);
 
   const BATCH_SIZE = engine === "google" ? 40 : 30;

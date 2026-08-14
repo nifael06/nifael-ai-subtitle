@@ -34,7 +34,7 @@ function safeBase64Decode(str) {
 // Helper to parse user configuration from URL
 function parseConfig(configStr) {
   const defaults = {
-    lang: "ms",
+    lang: "en",
     engine: "google",
     apiKey: "",
     model: "",
@@ -157,7 +157,7 @@ app.get("/api/render-sub", async (req, res) => {
       return res.status(400).send("Missing subUrl query parameter");
     }
 
-    const lang = targetLang || "ms";
+    const lang = targetLang || "en";
     const selectedEngine = engine || "google";
     const selectedModel = model || "";
     const cacheKey = `sub_${selectedEngine}_${selectedModel || 'def'}_${lang}_${subUrl}`;
