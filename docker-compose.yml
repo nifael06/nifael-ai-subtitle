@@ -1,0 +1,22 @@
+services:
+  nifael-ai-subtitle:
+    build: .
+    container_name: nifael-ai-subtitle
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PORT=7000
+    networks:
+      - aiostreams_web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=aiostreams_web"
+      - "traefik.http.routers.nifael-subs.entrypoints=websecure"
+      - "traefik.http.routers.nifael-subs.rule=Host(`aisubtitletranslation.nifael06.site`)"
+      - "traefik.http.routers.nifael-subs.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nifael-subs.loadbalancer.server.port=7000"
+
+networks:
+  aiostreams_web:
+    external: true

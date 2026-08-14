@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nifael AI subtitle - Configuration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1.5rem;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #1e293b;
+      padding: 2.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-bottom: 1.75rem;
+    }
+    .form-group {
+      text-align: left;
+      margin-bottom: 1.2rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+    select, input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 0.5rem;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+      font-size: 0.95rem;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    select:focus, input:focus {
+      border-color: #818cf8;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 0.3rem;
+    }
+    .divider {
+      border-top: 1px solid #334155;
+      margin: 1.5rem 0;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-align: left;
+      margin-bottom: 1rem;
+    }
+    .optional-badge {
+      background: #334155;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: normal;
+    }
+    .url-box {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      margin-top: 0.5rem;
+    }
+    #manifestUrlInput {
+      color: #94a3b8;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .btn-copy {
+      padding: 0.8rem 1.2rem;
+      border-radius: 0.5rem;
+      background: #334155;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: 1px solid #475569;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-copy:hover {
+      background: #475569;
+    }
+    .btn-install {
+      display: block;
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 0.5rem;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: opacity 0.2s;
+    }
+    .btn-install:hover {
+      opacity: 0.9;
+    }
+    #apiKeyGroup, #modelGroup {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>nifael AI subtitle</h1>
+    <p>AI Subtitle Translation for OpenSubtitles, SubDL & SubSource</p>
+    
+    <!-- 1. Language -->
+    <div class="form-group">
+      <label for="languageSelect">1. Target Language:</label>
+      <select id="languageSelect" onchange="updateManifestUrl()">
+        <option value="ms" selected>Malay (Bahasa Melayu)</option>
+        <option value="en">English</option>
+        <option value="id">Indonesian (Bahasa Indonesia)</option>
+        <option value="es">Spanish (Español)</option>
+        <option value="fr">French (Français)</option>
+        <option value="de">German (Deutsch)</option>
+        <option value="ar">Arabic (العربية)</option>
+        <option value="zh">Chinese (中文)</option>
+        <option value="ja">Japanese (日本語)</option>
+        <option value="ko">Korean (한국어)</option>
+        <option value="th">Thai (ไทย)</option>
+        <option value="vi">Vietnamese (Tiếng Việt)</option>
+        <option value="pt">Portuguese (Português)</option>
+        <option value="ru">Russian (Русский)</option>
+        <option value="hi">Hindi (हिन्दी)</option>
+        <option value="it">Italian (Italiano)</option>
+        <option value="tr">Turkish (Türkçe)</option>
+      </select>
+    </div>
+
+    <!-- 2. AI Engine -->
+    <div class="form-group">
+      <label for="engineSelect">2. Translation Engine:</label>
+      <select id="engineSelect" onchange="handleEngineChange()">
+        <option value="google" selected>Google Translate (Free, Instant, No Key)</option>
+        <option value="gemini">Google Gemini AI (Custom Model Support)</option>
+        <option value="openai">OpenAI (Custom Model Support)</option>
+        <option value="deepl">DeepL API (Pro Accuracy)</option>
+      </select>
+    </div>
+
+    <!-- Dynamic AI Key -->
+    <div class="form-group" id="apiKeyGroup">
+      <label for="apiKeyInput" id="apiKeyLabel">AI API Key: <span class="optional-badge">Optional</span></label>
+      <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl()">
+      <div class="hint" id="apiKeyHint">Leave blank to use the server's default fallback key.</div>
+    </div>
+
+    <!-- Dynamic Custom Model -->
+    <div class="form-group" id="modelGroup">
+      <label for="modelInput" id="modelLabel">Custom AI Model: <span class="optional-badge">Optional</span></label>
+      <input type="text" id="modelInput" placeholder="e.g. gemini-1.5-flash" oninput="updateManifestUrl()">
+      <div class="hint" id="modelHint">Leave blank for default model, or specify any model ID.</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-title">Subtitle Provider Keys (Optional)</div>
+
+    <!-- OpenSubtitles Key -->
+    <div class="form-group">
+      <label for="osKeyInput">OpenSubtitles.com API Key: <span class="optional-badge">Optional</span></label>
+      <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user key" oninput="updateManifestUrl()">
+      <div class="hint">Leave blank to use the free public database (no key required).</div>
+    </div>
+
+    <!-- SubDL Key -->
+    <div class="form-group">
+      <label for="subdlKeyInput">SubDL API Key: <span class="optional-badge">Optional</span></label>
+      <input type="password" id="subdlKeyInput" placeholder="Optional SubDL user API key" oninput="updateManifestUrl()">
+      <div class="hint">Paste your personal SubDL API key (free at subdl.com) if available.</div>
+    </div>
+
+    <!-- SubSource Key -->
+    <div class="form-group">
+      <label for="subsourceKeyInput">SubSource API Key: <span class="optional-badge">Optional</span></label>
+      <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource user API key" oninput="updateManifestUrl()">
+      <div class="hint">Paste your personal SubSource API key (from subsource.net) if available.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Manifest URL -->
+    <div class="form-group">
+      <label for="manifestUrlInput">Manifest URL (Click to copy):</label>
+      <div class="url-box">
+        <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()">
+        <button class="btn-copy" id="copyBtn" onclick="copyManifestUrl()">Copy URL</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <button class="btn-install" onclick="installAddon()">Install to Stremio (App)</button>
+      <button class="btn-copy" style="width: 100%; padding: 0.8rem;" onclick="installWebAddon()">Open in Stremio Web</button>
+    </div>
+  </div>
+
+  <script>
+    function handleEngineChange() {
+      const engine = document.getElementById("engineSelect").value;
+      const keyGroup = document.getElementById("apiKeyGroup");
+      const keyLabel = document.getElementById("apiKeyLabel");
+      const modelGroup = document.getElementById("modelGroup");
+      const modelInput = document.getElementById("modelInput");
+      const modelHint = document.getElementById("modelHint");
+
+      if (engine === "google") {
+        keyGroup.style.display = "none";
+        modelGroup.style.display = "none";
+      } else if (engine === "deepl") {
+        keyGroup.style.display = "block";
+        keyLabel.innerHTML = 'DeepL API Key: <span class="optional-badge">Optional</span>';
+        modelGroup.style.display = "none";
+      } else {
+        keyGroup.style.display = "block";
+        modelGroup.style.display = "block";
+
+        if (engine === "gemini") {
+          keyLabel.innerHTML = 'Google Gemini API Key: <span class="optional-badge">Optional</span>';
+          modelInput.placeholder = "e.g. gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash";
+          modelHint.textContent = "Default: gemini-1.5-flash. You can specify any Gemini model ID.";
+        } else if (engine === "openai") {
+          keyLabel.innerHTML = 'OpenAI API Key: <span class="optional-badge">Optional</span>';
+          modelInput.placeholder = "e.g. gpt-4o-mini, gpt-4o";
+          modelHint.textContent = "Default: gpt-4o-mini. You can specify any OpenAI model ID.";
+        }
+      }
+      updateManifestUrl();
+    }
+
+    function encodeUrlSafeBase64(str) {
+      const utf8Bytes = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode('0x' + p1);
+      });
+      return btoa(utf8Bytes)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+
+    function getManifestUrl() {
+      const lang = document.getElementById("languageSelect").value;
+      const engine = document.getElementById("engineSelect").value;
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const model = document.getElementById("modelInput").value.trim();
+      const osKey = document.getElementById("osKeyInput").value.trim();
+      const subdlKey = document.getElementById("subdlKeyInput").value.trim();
+      const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
+
+      // If pure default with zero custom keys
+      if (engine === "google" && !apiKey && !model && !osKey && !subdlKey && !subsourceKey) {
+        return `${window.location.origin}/${lang}/manifest.json`;
+      }
+
+      const configObj = { lang, engine, apiKey, model, osKey, subdlKey, subsourceKey };
+      const configStr = encodeUrlSafeBase64(JSON.stringify(configObj));
+      return `${window.location.origin}/${configStr}/manifest.json`;
+    }
+
+    function updateManifestUrl() {
+      document.getElementById("manifestUrlInput").value = getManifestUrl();
+    }
+
+    function showCopiedFeedback() {
+      const btn = document.getElementById("copyBtn");
+      btn.textContent = "Copied! ✓";
+      btn.style.background = "#22c55e";
+      setTimeout(() => {
+        btn.textContent = "Copy URL";
+        btn.style.background = "#334155";
+      }, 2000);
+    }
+
+    function copyManifestUrl() {
+      const urlInput = document.getElementById("manifestUrlInput");
+      const textToCopy = urlInput.value;
+
+      urlInput.focus();
+      urlInput.select();
+      urlInput.setSelectionRange(0, 99999);
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy).then(showCopiedFeedback).catch(() => {
+          document.execCommand("copy");
+          showCopiedFeedback();
+        });
+      } else {
+        document.execCommand("copy");
+        showCopiedFeedback();
+      }
+    }
+
+    function installAddon() {
+      const manifestUrl = getManifestUrl().replace(/^https?:\/\//, "");
+      window.location.href = `stremio://${manifestUrl}`;
+    }
+
+    function installWebAddon() {
+      const manifestUrl = encodeURIComponent(getManifestUrl());
+      window.open(`https://web.stremio.com/#/addons?addon=${manifestUrl}`, "_blank");
+    }
+
+    updateManifestUrl();
+  </script>
+</body>
+</html>
