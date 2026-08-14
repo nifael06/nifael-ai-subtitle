@@ -727,9 +727,15 @@
       <div class="form-group" id="modelGroup">
         <label for="modelInput" id="modelLabel">Custom Model ID</label>
         <div class="control-wrap">
-          <input type="text" id="modelInput" placeholder="e.g. gemini-3.5-flash-lite" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
+          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
+          <datalist id="modelPresets">
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra Fast)</option>
+            <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
+            <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
+            <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
+          </datalist>
         </div>
-        <div class="hint" id="modelHint">Leave blank for default model, or specify any model ID.</div>
+        <div class="hint" id="modelHint">Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash and newer models.</div>
       </div>
     </div>
 
@@ -882,12 +888,30 @@
 
         if (engine === "gemini") {
           keyLabel.textContent = "Google Gemini API Key";
-          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-2.5-flash, gemini-2.0-flash";
-          modelHint.textContent = "Default: gemini-3.5-flash-lite. You can specify any Gemini model ID.";
+          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash";
+          modelHint.textContent = "Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash and newer models.";
+          const datalist = document.getElementById("modelPresets");
+          if (datalist) {
+            datalist.innerHTML = `
+              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra Fast)</option>
+              <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
+              <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
+              <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
+            `;
+          }
         } else if (engine === "openai") {
           keyLabel.textContent = "OpenAI API Key";
-          modelInput.placeholder = "e.g. gpt-4o-mini, gpt-4o";
+          modelInput.placeholder = "e.g. gpt-4o-mini, gpt-4o, o3-mini";
           modelHint.textContent = "Default: gpt-4o-mini. You can specify any OpenAI model ID.";
+          const datalist = document.getElementById("modelPresets");
+          if (datalist) {
+            datalist.innerHTML = `
+              <option value="gpt-4o-mini">gpt-4o-mini (Default / Fast)</option>
+              <option value="gpt-4o">gpt-4o (High Intelligence)</option>
+              <option value="o3-mini">o3-mini (Reasoning)</option>
+              <option value="gpt-3.5-turbo">gpt-3.5-turbo (Legacy)</option>
+            `;
+          }
         }
       }
       updateManifestUrl();
