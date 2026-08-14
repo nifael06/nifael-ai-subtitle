@@ -504,6 +504,48 @@
       border-color: rgba(255, 255, 255, 0.18);
     }
 
+    .unsaved-badge {
+      display: none;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      margin: 0 auto 0.75rem auto;
+      width: fit-content;
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+      50% { box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.2); }
+    }
+
+    .toast-banner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.65rem 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.25rem;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Footer */
     .footer {
       text-align: center;
@@ -526,12 +568,22 @@
 </head>
 <body>
   <div class="dashboard-container">
+    <!-- Save Success Toast -->
+    <div id="toastBanner" class="toast-banner">
+      <span>🟢</span>
+      <span id="toastMsg">Configuration Saved Successfully! ✓</span>
+    </div>
+
     <!-- Header -->
     <div class="header">
       <div class="brand-badge-container">
         <span class="status-dot"></span>
         <span class="brand-badge-text">Stremio Addon</span>
         <span class="brand-version">v1.0.0</span>
+      </div>
+      <div id="unsavedBadge" class="unsaved-badge">
+        <span>⚠️</span>
+        <span>You have unsaved changes</span>
       </div>
       <h1>nifael AI subtitle</h1>
       <p class="subtitle">AI-Powered Subtitle Aggregator & Real-Time Dialogue Translator</p>
@@ -549,7 +601,7 @@
       <div class="form-group">
         <label for="languageSelect">Select Subtitle Target Language</label>
         <div class="control-wrap">
-          <select id="languageSelect" onchange="updateManifestUrl()">
+          <select id="languageSelect" onchange="updateManifestUrl(); markUnsaved()">
             <option value="af">Afrikaans</option>
             <option value="sq">Albanian (Shqip)</option>
             <option value="am">Amharic (አማርኛ)</option>
@@ -701,7 +753,7 @@
       <div class="form-group">
         <label for="engineSelect">Translation Provider</label>
         <div class="control-wrap">
-          <select id="engineSelect" onchange="handleEngineChange()">
+          <select id="engineSelect" onchange="handleEngineChange(); markUnsaved()">
             <option value="google" selected>Google Translate (Free, Instant, Zero Config)</option>
             <option value="gemini">Google Gemini AI (High Context & Quality)</option>
             <option value="openai">OpenAI (GPT-4o / Custom Model)</option>
@@ -714,7 +766,7 @@
       <div class="form-group" id="apiKeyGroup">
         <label for="apiKeyInput" id="apiKeyLabel">API Key</label>
         <div class="input-btn-wrap">
-          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
+          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
           <button type="button" class="btn-test" id="testAiKeyBtn" onclick="testKey('ai')">
             <span>⚡ Test Key</span>
           </button>
@@ -727,7 +779,7 @@
       <div class="form-group" id="modelGroup">
         <label for="modelInput" id="modelLabel">Custom Model ID</label>
         <div class="control-wrap">
-          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
+          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
           <datalist id="modelPresets">
             <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra Fast)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
@@ -764,7 +816,7 @@
             <span class="pill-badge badge-opt">Optional</span>
           </label>
           <div class="input-btn-wrap">
-            <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl(); clearVerifyBadge('opensubtitles')">
+            <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl(); clearVerifyBadge('opensubtitles'); markUnsaved()">
             <button type="button" class="btn-test" id="testOsKeyBtn" onclick="testKey('opensubtitles')">
               <span>⚡ Test Key</span>
             </button>
@@ -780,7 +832,7 @@
             <span class="pill-badge badge-opt">Optional</span>
           </label>
           <div class="input-btn-wrap">
-            <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl(); clearVerifyBadge('subdl')">
+            <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl(); clearVerifyBadge('subdl'); markUnsaved()">
             <button type="button" class="btn-test" id="testSubdlKeyBtn" onclick="testKey('subdl')">
               <span>⚡ Test Key</span>
             </button>
@@ -796,7 +848,7 @@
             <span class="pill-badge badge-opt">Optional</span>
           </label>
           <div class="input-btn-wrap">
-            <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl(); clearVerifyBadge('subsource')">
+            <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl(); clearVerifyBadge('subsource'); markUnsaved()">
             <button type="button" class="btn-test" id="testSubsourceKeyBtn" onclick="testKey('subsource')">
               <span>⚡ Test Key</span>
             </button>
@@ -828,11 +880,11 @@
       </div>
 
       <div class="actions-grid">
-        <button class="btn-primary" onclick="installAddon()">
+        <button class="btn-primary" id="saveInstallBtn" onclick="saveAndInstall()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
           </svg>
-          Install to Stremio (App)
+          Save & Install / Update in Stremio
         </button>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
@@ -1133,17 +1185,69 @@
       }
     }
 
+    const STORAGE_KEY = "nifael_ai_subtitles_config";
+
+    function markUnsaved() {
+      const badge = document.getElementById("unsavedBadge");
+      if (badge) badge.style.display = "inline-flex";
+    }
+
+    function clearUnsaved() {
+      const badge = document.getElementById("unsavedBadge");
+      if (badge) badge.style.display = "none";
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toastBanner");
+      const toastMsg = document.getElementById("toastMsg");
+      if (toast && toastMsg) {
+        toastMsg.textContent = msg;
+        toast.style.display = "flex";
+        setTimeout(() => {
+          toast.style.display = "none";
+        }, 3500);
+      }
+    }
+
+    function saveSettings() {
+      const lang = document.getElementById("languageSelect").value;
+      const engine = document.getElementById("engineSelect").value;
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const model = document.getElementById("modelInput").value.trim();
+      const osKey = document.getElementById("osKeyInput").value.trim();
+      const subdlKey = document.getElementById("subdlKeyInput").value.trim();
+      const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
+
+      const configObj = { lang, engine, apiKey, model, osKey, subdlKey, subsourceKey };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(configObj));
+      } catch (e) {}
+
+      clearUnsaved();
+      showToast("Configuration Saved Successfully! ✓");
+      updateManifestUrl();
+      return configObj;
+    }
+
+    function saveAndInstall() {
+      saveSettings();
+      const manifestUrl = getManifestUrl().replace(/^https?:\/\//, "");
+      window.location.href = `stremio://${manifestUrl}`;
+    }
+
     function installAddon() {
+      saveSettings();
       const manifestUrl = getManifestUrl().replace(/^https?:\/\//, "");
       window.location.href = `stremio://${manifestUrl}`;
     }
 
     function installWebAddon() {
+      saveSettings();
       const manifestUrl = encodeURIComponent(getManifestUrl());
       window.open(`https://web.stremio.com/#/addons?addon=${manifestUrl}`, "_blank");
     }
 
-    // Auto-populate from URL path or search query on load
+    // Auto-populate from URL path, query string, or localStorage on load
     function loadConfigFromUrl() {
       try {
         const path = window.location.pathname;
@@ -1171,6 +1275,16 @@
           if (searchParams.has("subsourceKey")) configData.subsourceKey = searchParams.get("subsourceKey");
         }
 
+        // If no URL parameter was provided, restore saved preferences from localStorage
+        if (!configData) {
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+              configData = JSON.parse(saved);
+            }
+          } catch (e) {}
+        }
+
         if (configData) {
           if (configData.lang && document.querySelector(`#languageSelect option[value="${configData.lang}"]`)) {
             document.getElementById("languageSelect").value = configData.lang;
@@ -1196,6 +1310,7 @@
       } catch (err) {
         handleEngineChange();
       }
+      clearUnsaved();
       updateManifestUrl();
     }
 
