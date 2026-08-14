@@ -285,6 +285,81 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    .input-btn-wrap {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-test {
+      padding: 0 0.95rem;
+      border-radius: 0.65rem;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: var(--accent-indigo);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .btn-test:hover:not(:disabled) {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #ffffff;
+    }
+
+    .btn-test:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .verify-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 0.5rem;
+      margin-top: 0.45rem;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .verify-badge.loading {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .verify-badge.success {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .verify-badge.error {
+      background: rgba(248, 113, 113, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(248, 113, 113, 0.3);
+    }
+
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      border-top-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     /* Manifest Box */
     .manifest-box-wrap {
       display: flex;
@@ -590,9 +665,13 @@
       <!-- Dynamic API Key Input -->
       <div class="form-group" id="apiKeyGroup">
         <label for="apiKeyInput" id="apiKeyLabel">API Key</label>
-        <div class="control-wrap">
-          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl()">
+        <div class="input-btn-wrap">
+          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
+          <button type="button" class="btn-test" id="testAiKeyBtn" onclick="testKey('ai')">
+            <span>⚡ Test Key</span>
+          </button>
         </div>
+        <div id="aiKeyBadge"></div>
         <div class="hint" id="apiKeyHint">Leave blank to use the server's fallback key if available.</div>
       </div>
 
@@ -600,7 +679,7 @@
       <div class="form-group" id="modelGroup">
         <label for="modelInput" id="modelLabel">Custom Model ID</label>
         <div class="control-wrap">
-          <input type="text" id="modelInput" placeholder="e.g. gemini-1.5-flash" oninput="updateManifestUrl()">
+          <input type="text" id="modelInput" placeholder="e.g. gemini-1.5-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai')">
         </div>
         <div class="hint" id="modelHint">Leave blank for default model, or specify any model ID.</div>
       </div>
@@ -622,9 +701,13 @@
           <span>OpenSubtitles.com VIP Key</span>
           <span class="pill-badge badge-opt">Optional</span>
         </label>
-        <div class="control-wrap">
-          <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl()">
+        <div class="input-btn-wrap">
+          <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl(); clearVerifyBadge('opensubtitles')">
+          <button type="button" class="btn-test" id="testOsKeyBtn" onclick="testKey('opensubtitles')">
+            <span>⚡ Test Key</span>
+          </button>
         </div>
+        <div id="osKeyBadge"></div>
         <div class="hint">Leave blank to use the high-speed public database (no key needed).</div>
       </div>
 
@@ -634,9 +717,13 @@
           <span>SubDL API Key</span>
           <span class="pill-badge badge-opt">Optional</span>
         </label>
-        <div class="control-wrap">
-          <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl()">
+        <div class="input-btn-wrap">
+          <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl(); clearVerifyBadge('subdl')">
+          <button type="button" class="btn-test" id="testSubdlKeyBtn" onclick="testKey('subdl')">
+            <span>⚡ Test Key</span>
+          </button>
         </div>
+        <div id="subdlKeyBadge"></div>
         <div class="hint">Paste your free SubDL API key (from subdl.com) if available.</div>
       </div>
 
@@ -646,9 +733,13 @@
           <span>SubSource API Key</span>
           <span class="pill-badge badge-opt">Optional</span>
         </label>
-        <div class="control-wrap">
-          <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl()">
+        <div class="input-btn-wrap">
+          <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl(); clearVerifyBadge('subsource')">
+          <button type="button" class="btn-test" id="testSubsourceKeyBtn" onclick="testKey('subsource')">
+            <span>⚡ Test Key</span>
+          </button>
         </div>
+        <div id="subsourceKeyBadge"></div>
         <div class="hint">Paste your personal SubSource API key (from subsource.net) if available.</div>
       </div>
     </div>
@@ -885,6 +976,79 @@
         document.execCommand("copy");
         document.body.removeChild(temp);
         onCopySuccess();
+      }
+    }
+
+    function clearVerifyBadge(providerType) {
+      let badgeId = "";
+      if (providerType === "ai") badgeId = "aiKeyBadge";
+      else if (providerType === "opensubtitles") badgeId = "osKeyBadge";
+      else if (providerType === "subdl") badgeId = "subdlKeyBadge";
+      else if (providerType === "subsource") badgeId = "subsourceKeyBadge";
+
+      const container = document.getElementById(badgeId);
+      if (container) container.innerHTML = "";
+    }
+
+    async function testKey(providerType) {
+      let provider = providerType;
+      let apiKey = "";
+      let model = "";
+      let badgeId = "";
+      let btnId = "";
+
+      if (providerType === "ai") {
+        provider = document.getElementById("engineSelect").value;
+        apiKey = document.getElementById("apiKeyInput").value.trim();
+        model = document.getElementById("modelInput").value.trim();
+        badgeId = "aiKeyBadge";
+        btnId = "testAiKeyBtn";
+      } else if (providerType === "opensubtitles") {
+        apiKey = document.getElementById("osKeyInput").value.trim();
+        badgeId = "osKeyBadge";
+        btnId = "testOsKeyBtn";
+      } else if (providerType === "subdl") {
+        apiKey = document.getElementById("subdlKeyInput").value.trim();
+        badgeId = "subdlKeyBadge";
+        btnId = "testSubdlKeyBtn";
+      } else if (providerType === "subsource") {
+        apiKey = document.getElementById("subsourceKeyInput").value.trim();
+        badgeId = "subsourceKeyBadge";
+        btnId = "testSubsourceKeyBtn";
+      }
+
+      const badge = document.getElementById(badgeId);
+      const btn = document.getElementById(btnId);
+
+      if (!apiKey) {
+        if (badge) {
+          badge.innerHTML = `<div class="verify-badge error"><span>🔴</span><span>Please enter an API key to test</span></div>`;
+        }
+        return;
+      }
+
+      if (badge) {
+        badge.innerHTML = `<div class="verify-badge loading"><div class="spinner"></div><span>Testing key with ${provider.toUpperCase()}...</span></div>`;
+      }
+      if (btn) btn.disabled = true;
+
+      try {
+        const response = await fetch("/api/verify-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider, apiKey, model })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          badge.innerHTML = `<div class="verify-badge success"><span>🟢</span><span>${data.message || 'Valid & Working ✓'}</span></div>`;
+        } else {
+          badge.innerHTML = `<div class="verify-badge error"><span>🔴</span><span>Invalid Key ✕: ${data.message || 'Verification failed'}</span></div>`;
+        }
+      } catch (err) {
+        badge.innerHTML = `<div class="verify-badge error"><span>🔴</span><span>Verification Error: ${err.message}</span></div>`;
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 

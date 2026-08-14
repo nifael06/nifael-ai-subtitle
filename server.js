@@ -2,6 +2,7 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const axios = require("axios");
 const manifest = require("./manifest");
 const { searchAllSubtitles, downloadSubtitleText } = require("./providers");
 const { parseSrt, cleanCues, cuesToVtt } = require("./srtHelper");
@@ -202,6 +203,104 @@ app.get("/api/render-sub", async (req, res) => {
   } catch (error) {
     console.error("[nifael AI] Translation render error:", error.message);
     res.status(500).send("Internal Server Error while rendering subtitle.");
+  }
+});
+
+// 5. API Key & Provider Verification Endpoint
+app.post("/api/verify-key", async (req, res) => {
+  const { provider, apiKey, model } = req.body || {};
+
+  if (!apiKey || !apiKey.trim()) {
+    return res.status(400).json({ success: false, message: "API key is required" });
+  }
+
+  const key = apiKey.trim();
+
+  try {
+    if (provider === "gemini") {
+      const selectedModel = model && model.trim() ? model.trim() : "gemini-1.5-flash";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`;
+      const response = await axios.post(
+        url,
+        {
+          contents: [{ parts: [{ text: "Translate: Hello" }] }]
+        },
+        { timeout: 8000 }
+      );
+      if (response.data && response.data.candidates) {
+        return res.json({ success: true, message: `Valid & Working (${selectedModel})` });
+      }
+      return res.json({ success: true, message: "Valid & Working" });
+    } else if (provider === "openai") {
+      const response = await axios.get("https://api.openai.com/v1/models", {
+        headers: { Authorization: `Bearer ${key}` },
+        timeout: 8000
+      });
+      if (response.data && response.data.data) {
+        return res.json({ success: true, message: "Valid & Working" });
+      }
+    } else if (provider === "deepl") {
+      const endpoint = key.endsWith(":fx") ? "https://api-free.deepl.com" : "https://api.deepl.com";
+      const response = await axios.get(`${endpoint}/v2/usage`, {
+        headers: { Authorization: `DeepL-Auth-Key ${key}` },
+        timeout: 8000
+      });
+      if (response.data && typeof response.data.character_count !== "undefined") {
+        const count = response.data.character_count.toLocaleString();
+        const limit = response.data.character_limit ? response.data.character_limit.toLocaleString() : "unlimited";
+        return res.json({ success: true, message: `Valid & Working (${count}/${limit} chars)` });
+      }
+    } else if (provider === "opensubtitles") {
+      const response = await axios.get("https://api.opensubtitles.com/api/v1/infos/user", {
+        headers: {
+          "Api-Key": key,
+          "User-Agent": "nifael AI subtitle v1.0.0"
+        },
+        timeout: 8000
+      });
+      if (response.data && response.data.data) {
+        const user = response.data.data.username || "VIP User";
+        return res.json({ success: true, message: `Valid & Working (User: ${user})` });
+      }
+    } else if (provider === "subdl") {
+      const response = await axios.get(`https://api.subdl.com/api/v1/subtitles?api_key=${encodeURIComponent(key)}&imdb_id=tt0111161`, {
+        timeout: 8000
+      });
+      if (response.data && response.data.status !== false && !response.data.error) {
+        return res.json({ success: true, message: "Valid & Working" });
+      } else {
+        return res.json({ success: false, message: response.data.error || "Invalid SubDL API Key" });
+      }
+    } else if (provider === "subsource") {
+      const response = await axios.get(`https://api.subsource.net/api/v1/subtitles/search?imdb=tt0111161&api_key=${encodeURIComponent(key)}`, {
+        timeout: 8000
+      });
+      if (response.data && (response.data.success || response.data.subtitles || Array.isArray(response.data))) {
+        return res.json({ success: true, message: "Valid & Working" });
+      } else {
+        return res.json({ success: false, message: response.data.message || "Invalid SubSource API Key" });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: `Unknown provider '${provider}'` });
+    }
+
+    return res.json({ success: true, message: "Valid & Working" });
+  } catch (error) {
+    let errorMsg = error.message;
+    if (error.response) {
+      const status = error.response.status;
+      const data = error.response.data;
+      if (status === 401 || status === 403) {
+        errorMsg = data?.error?.message || data?.message || "Invalid API key or unauthorized access";
+      } else if (status === 404) {
+        errorMsg = data?.error?.message || data?.message || "Model or endpoint not found";
+      } else if (status === 429) {
+        errorMsg = "Rate limit or quota exceeded";
+      } else {
+        errorMsg = data?.error?.message || data?.message || `HTTP ${status}: ${error.message}`;
+      }
+    }
+    return res.json({ success: false, message: errorMsg });
   }
 });
 
