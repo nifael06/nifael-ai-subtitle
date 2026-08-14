@@ -148,6 +148,54 @@
       border-color: var(--card-hover-border);
     }
 
+    /* Accordion / Collapsible Card */
+    details.accordion-card {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    details.accordion-card summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      outline: none;
+      margin-bottom: 0;
+      transition: margin-bottom 0.2s ease;
+    }
+
+    details.accordion-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.accordion-card[open] summary {
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--section-border);
+      padding-bottom: 0.85rem;
+    }
+
+    .accordion-toggle-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      color: var(--text-muted);
+      transition: transform 0.25s ease, color 0.2s ease;
+      font-size: 0.8rem;
+    }
+
+    details.accordion-card[open] .accordion-toggle-icon {
+      transform: rotate(180deg);
+      color: var(--accent-indigo);
+    }
+
+    .accordion-content {
+      animation: fadeIn 0.25s ease-in-out;
+      user-select: auto;
+      cursor: auto;
+    }
+
     .section-header {
       display: flex;
       align-items: center;
@@ -685,64 +733,73 @@
       </div>
     </div>
 
-    <!-- 3. Subtitle Provider Keys -->
-    <div class="section-card">
-      <div class="section-header">
+    <!-- 3. Subtitle Provider Keys (Collapsible Accordion) -->
+    <details class="section-card accordion-card" id="providerDetails">
+      <summary class="section-header">
         <div class="section-title-wrap">
           <div class="section-icon">🔑</div>
-          <span class="section-title">Subtitle Provider Keys</span>
+          <span class="section-title">Optional Subtitle Provider Keys (VIP / Custom)</span>
         </div>
-        <span class="pill-badge badge-opt">Optional</span>
-      </div>
-
-      <!-- OpenSubtitles Key -->
-      <div class="form-group">
-        <label for="osKeyInput">
-          <span>OpenSubtitles.com VIP Key</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
           <span class="pill-badge badge-opt">Optional</span>
-        </label>
-        <div class="input-btn-wrap">
-          <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl(); clearVerifyBadge('opensubtitles')">
-          <button type="button" class="btn-test" id="testOsKeyBtn" onclick="testKey('opensubtitles')">
-            <span>⚡ Test Key</span>
-          </button>
+          <span class="accordion-toggle-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
         </div>
-        <div id="osKeyBadge"></div>
-        <div class="hint">Leave blank to use the high-speed public database (no key needed).</div>
-      </div>
+      </summary>
 
-      <!-- SubDL Key -->
-      <div class="form-group">
-        <label for="subdlKeyInput">
-          <span>SubDL API Key</span>
-          <span class="pill-badge badge-opt">Optional</span>
-        </label>
-        <div class="input-btn-wrap">
-          <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl(); clearVerifyBadge('subdl')">
-          <button type="button" class="btn-test" id="testSubdlKeyBtn" onclick="testKey('subdl')">
-            <span>⚡ Test Key</span>
-          </button>
+      <div class="accordion-content">
+        <!-- OpenSubtitles Key -->
+        <div class="form-group">
+          <label for="osKeyInput">
+            <span>OpenSubtitles.com VIP Key</span>
+            <span class="pill-badge badge-opt">Optional</span>
+          </label>
+          <div class="input-btn-wrap">
+            <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl(); clearVerifyBadge('opensubtitles')">
+            <button type="button" class="btn-test" id="testOsKeyBtn" onclick="testKey('opensubtitles')">
+              <span>⚡ Test Key</span>
+            </button>
+          </div>
+          <div id="osKeyBadge"></div>
+          <div class="hint">Leave blank to use the high-speed public database (no key needed).</div>
         </div>
-        <div id="subdlKeyBadge"></div>
-        <div class="hint">Paste your free SubDL API key (from subdl.com) if available.</div>
-      </div>
 
-      <!-- SubSource Key -->
-      <div class="form-group">
-        <label for="subsourceKeyInput">
-          <span>SubSource API Key</span>
-          <span class="pill-badge badge-opt">Optional</span>
-        </label>
-        <div class="input-btn-wrap">
-          <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl(); clearVerifyBadge('subsource')">
-          <button type="button" class="btn-test" id="testSubsourceKeyBtn" onclick="testKey('subsource')">
-            <span>⚡ Test Key</span>
-          </button>
+        <!-- SubDL Key -->
+        <div class="form-group">
+          <label for="subdlKeyInput">
+            <span>SubDL API Key</span>
+            <span class="pill-badge badge-opt">Optional</span>
+          </label>
+          <div class="input-btn-wrap">
+            <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl(); clearVerifyBadge('subdl')">
+            <button type="button" class="btn-test" id="testSubdlKeyBtn" onclick="testKey('subdl')">
+              <span>⚡ Test Key</span>
+            </button>
+          </div>
+          <div id="subdlKeyBadge"></div>
+          <div class="hint">Paste your free SubDL API key (from subdl.com) if available.</div>
         </div>
-        <div id="subsourceKeyBadge"></div>
-        <div class="hint">Paste your personal SubSource API key (from subsource.net) if available.</div>
+
+        <!-- SubSource Key -->
+        <div class="form-group">
+          <label for="subsourceKeyInput">
+            <span>SubSource API Key</span>
+            <span class="pill-badge badge-opt">Optional</span>
+          </label>
+          <div class="input-btn-wrap">
+            <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl(); clearVerifyBadge('subsource')">
+            <button type="button" class="btn-test" id="testSubsourceKeyBtn" onclick="testKey('subsource')">
+              <span>⚡ Test Key</span>
+            </button>
+          </div>
+          <div id="subsourceKeyBadge"></div>
+          <div class="hint">Paste your personal SubSource API key (from subsource.net) if available.</div>
+        </div>
       </div>
-    </div>
+    </details>
 
     <!-- 4. Manifest & Installation -->
     <div class="section-card">
@@ -1102,6 +1159,11 @@
           if (configData.osKey) document.getElementById("osKeyInput").value = configData.osKey;
           if (configData.subdlKey) document.getElementById("subdlKeyInput").value = configData.subdlKey;
           if (configData.subsourceKey) document.getElementById("subsourceKeyInput").value = configData.subsourceKey;
+
+          if (configData.osKey || configData.subdlKey || configData.subsourceKey) {
+            const details = document.getElementById("providerDetails");
+            if (details) details.open = true;
+          }
         }
       } catch (err) {}
     }
