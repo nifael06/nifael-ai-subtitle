@@ -86,8 +86,11 @@ function parseConfig(configStr) {
   return defaults;
 }
 
-// 1. Web Configuration Page
-app.get(["/", "/configure"], (req, res) => {
+// 1. Web Configuration Page (supports root, /configure, and /:config/configure share links)
+app.get(["/", "/configure", "/:config/configure", "/:config"], (req, res, next) => {
+  if (req.path.endsWith(".json") || req.path.startsWith("/api") || req.path.startsWith("/subtitles")) {
+    return next();
+  }
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -120,8 +123,9 @@ app.get(["/subtitles/:type/:id.json", "/:config/subtitles/:type/:id.json"], asyn
 
     const availableSubs = await searchAllSubtitles(imdbId, season, episode, { osKey, subdlKey, subsourceKey }, type);
 
-    const host = req.get("host");
-    const protocol = req.protocol;
+    const host = req.get("host") || "aisubtitletranslation.nifael06.site";
+    const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https" || req.protocol === "https" || !host.startsWith("localhost");
+    const protocol = isSecure ? "https" : req.protocol;
 
     const stremioSubtitles = availableSubs
       .filter(sub => sub.downloadUrl)
