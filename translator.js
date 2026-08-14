@@ -39,6 +39,18 @@ async function translateWithGoogle(textBatch, targetLang) {
 }
 
 /**
+ * Custom error for API quota/rate limit exceeded
+ */
+class QuotaExceededError extends Error {
+  constructor(engine, details) {
+    super(`${engine} API quota exceeded: ${details}`);
+    this.name = "QuotaExceededError";
+    this.engine = engine;
+    this.details = details;
+  }
+}
+
+/**
  * 2. Google Gemini AI Engine (Custom Model Support & Fallback)
  */
 async function translateWithGemini(textBatch, targetLang, apiKey, customModel) {
@@ -62,7 +74,20 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel) {
     const result = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
     return result || textBatch;
   } catch (error) {
-    console.error("[Gemini AI error]:", error.response?.data?.error?.message || error.message);
+    const status = error.response?.status;
+    const errorMsg = error.response?.data?.error?.message || error.message || "";
+    const errorStatus = error.response?.data?.error?.status || "";
+
+    // Detect quota/rate-limit errors and throw dedicated error
+    if (status === 429 || errorStatus === "RESOURCE_EXHAUSTED" ||
+        errorMsg.toLowerCase().includes("quota") ||
+        errorMsg.toLowerCase().includes("rate limit") ||
+        errorMsg.toLowerCase().includes("resource exhausted")) {
+      console.error(`[Gemini AI] Quota exceeded: ${errorMsg}`);
+      throw new QuotaExceededError("Gemini", errorMsg);
+    }
+
+    console.error("[Gemini AI error]:", errorMsg);
     return await translateWithGoogle(textBatch, targetLang);
   }
 }
@@ -99,7 +124,21 @@ async function translateWithOpenAI(textBatch, targetLang, apiKey, customModel) {
     const result = response.data?.choices?.[0]?.message?.content;
     return result || textBatch;
   } catch (error) {
-    console.error("[OpenAI error]:", error.response?.data?.error?.message || error.message);
+    const status = error.response?.status;
+    const errorMsg = error.response?.data?.error?.message || error.message || "";
+    const errorCode = error.response?.data?.error?.code || "";
+    const errorType = error.response?.data?.error?.type || "";
+
+    // Detect quota/rate-limit errors and throw dedicated error
+    if (status === 429 || errorCode === "insufficient_quota" ||
+        errorType === "insufficient_quota" ||
+        errorMsg.toLowerCase().includes("quota") ||
+        errorMsg.toLowerCase().includes("rate limit")) {
+      console.error(`[OpenAI] Quota exceeded: ${errorMsg}`);
+      throw new QuotaExceededError("OpenAI", errorMsg);
+    }
+
+    console.error("[OpenAI error]:", errorMsg);
     return await translateWithGoogle(textBatch, targetLang);
   }
 }
@@ -198,6 +237,7 @@ async function translateChunk(chunk, targetLang, engine, apiKey, customModel) {
 
 /**
  * Master concurrent batch translator dispatcher (5x-8x speedup)
+ * Returns { cues: [...], quotaExceeded: bool, engine: string }
  */
 async function translateCues(cues, targetLang = "en", engine = "google", apiKey = "", customModel = "") {
   console.log(`[nifael AI] Translating ${cues.length} cues to '${targetLang}' using: [${engine.toUpperCase()}] Model: [${customModel || "default"}]`);
@@ -213,15 +253,35 @@ async function translateCues(cues, targetLang = "en", engine = "google", apiKey 
   const CONCURRENCY = engine === "google" ? 6 : 4;
   const results = new Array(chunks.length);
   let currentIndex = 0;
+  let quotaExceeded = false;
+  let quotaEngine = "";
 
   async function worker() {
     while (currentIndex < chunks.length) {
       const idx = currentIndex++;
       try {
-        results[idx] = await translateChunk(chunks[idx], targetLang, engine, apiKey, customModel);
+        // If quota was already hit by another worker, translate remaining with Google
+        if (quotaExceeded) {
+          results[idx] = await translateChunk(chunks[idx], targetLang, "google", "", "");
+        } else {
+          results[idx] = await translateChunk(chunks[idx], targetLang, engine, apiKey, customModel);
+        }
       } catch (err) {
-        console.error(`[nifael AI] Chunk ${idx} translation error:`, err.message);
-        results[idx] = chunks[idx];
+        if (err instanceof QuotaExceededError) {
+          quotaExceeded = true;
+          quotaEngine = err.engine;
+          console.warn(`[nifael AI] ${err.engine} quota exceeded at chunk ${idx}, switching remaining to Google Translate`);
+          // Translate this failed chunk with Google as fallback
+          try {
+            results[idx] = await translateChunk(chunks[idx], targetLang, "google", "", "");
+          } catch (fallbackErr) {
+            console.error(`[nifael AI] Google fallback also failed for chunk ${idx}:`, fallbackErr.message);
+            results[idx] = chunks[idx];
+          }
+        } else {
+          console.error(`[nifael AI] Chunk ${idx} translation error:`, err.message);
+          results[idx] = chunks[idx];
+        }
       }
     }
   }
@@ -230,7 +290,11 @@ async function translateCues(cues, targetLang = "en", engine = "google", apiKey 
   const workers = Array.from({ length: workerCount }, () => worker());
   await Promise.all(workers);
 
-  return results.flat();
+  return {
+    cues: results.flat(),
+    quotaExceeded,
+    engine: quotaEngine
+  };
 }
 
 module.exports = { translateCues };

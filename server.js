@@ -192,7 +192,21 @@ app.get("/api/render-sub", async (req, res) => {
     const cues = cleanCues(rawCues);
 
     // 3. Translate cleaned dialogue cues
-    const translatedCues = await translateCues(cues, lang, selectedEngine, apiKey, selectedModel);
+    const translationResult = await translateCues(cues, lang, selectedEngine, apiKey, selectedModel);
+    let translatedCues = translationResult.cues;
+
+    // If quota was exceeded, inject a warning subtitle cue at the beginning
+    if (translationResult.quotaExceeded) {
+      const engineName = translationResult.engine || selectedEngine.toUpperCase();
+      console.warn(`[nifael AI] ${engineName} quota exceeded — injecting warning cue and serving Google Translate fallback`);
+
+      const warningCue = {
+        start: "00:00:02.000",
+        end: "00:00:15.000",
+        text: `⚠️ [nifael AI Warning]: Your ${engineName} API key has exceeded its quota limit!\nFalling back to Free Google Translation.`
+      };
+      translatedCues = [warningCue, ...translatedCues];
+    }
 
     // 4. Build standard WebVTT
     const vttContent = cuesToVtt(translatedCues);
