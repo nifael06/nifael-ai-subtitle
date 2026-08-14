@@ -167,11 +167,14 @@ app.get("/api/render-sub", async (req, res) => {
     const selectedModel = model || "";
     const cacheKey = `sub_${selectedEngine}_${selectedModel || 'def'}_${lang}_${subUrl}`;
 
-    // Return cached WebVTT if available
+    // Return cached WebVTT if available (instant response)
     const cachedVtt = cache.get(cacheKey);
     if (cachedVtt) {
-      console.log(`[nifael AI] Serving from cache: ${cacheKey.substring(0, 60)}...`);
+      console.log(`[nifael AI] ⚡ Cache hit: ${cacheKey.substring(0, 60)}...`);
       res.setHeader("Content-Type", "text/vtt; charset=utf-8");
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Content-Length", Buffer.byteLength(cachedVtt, "utf-8"));
       return res.send(cachedVtt);
     }
 
@@ -213,6 +216,9 @@ app.get("/api/render-sub", async (req, res) => {
     cache.set(cacheKey, vttContent);
 
     res.setHeader("Content-Type", "text/vtt; charset=utf-8");
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Content-Length", Buffer.byteLength(vttContent, "utf-8"));
     return res.send(vttContent);
   } catch (error) {
     console.error("[nifael AI] Translation render error:", error.message);
