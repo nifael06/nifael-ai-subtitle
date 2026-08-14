@@ -3,351 +3,697 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>nifael AI subtitle - Configuration</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <title>nifael AI subtitle - Addon Configuration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-canvas: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.88);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(99, 102, 241, 0.35);
+      --section-bg: rgba(15, 23, 42, 0.65);
+      --section-border: rgba(255, 255, 255, 0.05);
+      --input-bg: #0b1120;
+      --input-border: #243049;
+      --input-focus: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+      --accent-cyan: #38bdf8;
+      --accent-indigo: #818cf8;
+      --accent-purple: #c084fc;
+      --accent-green: #34d399;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-sub: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: 'Inter', sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.15), transparent 40%),
+        radial-gradient(circle at 85% 20%, rgba(56, 189, 248, 0.12), transparent 40%),
+        radial-gradient(circle at 50% 85%, rgba(192, 132, 252, 0.12), transparent 45%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 1.5rem;
-      box-sizing: border-box;
+      padding: 2.5rem 1.25rem;
     }
-    .card {
-      background: #1e293b;
-      padding: 2.5rem;
-      border-radius: 1rem;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+
+    .dashboard-container {
       width: 100%;
-      max-width: 520px;
-      text-align: center;
-      border: 1px solid #334155;
+      max-width: 620px;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 1.5rem;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.65),
+        0 0 40px rgba(99, 102, 241, 0.08);
+      padding: 2.25rem;
+      position: relative;
+      overflow: hidden;
     }
+
+    /* Ambient top glow bar */
+    .dashboard-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary-gradient);
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand-badge-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 9999px;
+      padding: 0.35rem 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .brand-badge-text {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+    }
+
+    .brand-version {
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
     h1 {
-      font-size: 1.75rem;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 70%, #94a3b8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-    }
-    p {
-      color: #94a3b8;
-      font-size: 0.95rem;
-      margin-bottom: 1.75rem;
-    }
-    .form-group {
-      text-align: left;
-      margin-bottom: 1.2rem;
-    }
-    label {
-      display: block;
       margin-bottom: 0.4rem;
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: #cbd5e1;
     }
-    select, input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 0.8rem;
-      border-radius: 0.5rem;
-      border: 1px solid #475569;
-      background: #0f172a;
-      color: white;
-      font-size: 0.95rem;
-      outline: none;
-      box-sizing: border-box;
-      transition: border-color 0.2s;
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
     }
-    select:focus, input:focus {
-      border-color: #818cf8;
+
+    /* Section Cards */
+    .section-card {
+      background: var(--section-bg);
+      border: 1px solid var(--section-border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    .hint {
-      font-size: 0.75rem;
-      color: #94a3b8;
-      margin-top: 0.3rem;
+
+    .section-card:hover {
+      border-color: var(--card-hover-border);
     }
-    .divider {
-      border-top: 1px solid #334155;
-      margin: 1.5rem 0;
-    }
-    .section-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #38bdf8;
-      text-align: left;
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 1rem;
     }
-    .optional-badge {
-      background: #334155;
-      color: #94a3b8;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      font-weight: normal;
-    }
-    .url-box {
+
+    .section-title-wrap {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-      margin-top: 0.5rem;
+      align-items: center;
+      gap: 0.6rem;
     }
-    #manifestUrlInput {
-      color: #94a3b8;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
-    .btn-copy {
-      padding: 0.8rem 1.2rem;
+
+    .section-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
       border-radius: 0.5rem;
-      background: #334155;
-      color: white;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-indigo);
+      font-size: 0.95rem;
+    }
+
+    .section-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.01em;
+    }
+
+    /* Badges */
+    .pill-badge {
+      font-size: 0.68rem;
       font-weight: 600;
-      font-size: 0.9rem;
-      border: 1px solid #475569;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
-    .btn-copy:hover {
-      background: #475569;
+
+    .badge-free {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(52, 211, 153, 0.25);
     }
-    .btn-install {
-      display: block;
+
+    .badge-ai {
+      background: rgba(192, 132, 252, 0.12);
+      color: var(--accent-purple);
+      border: 1px solid rgba(192, 132, 252, 0.25);
+    }
+
+    .badge-opt {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 0.45rem;
+    }
+
+    .control-wrap {
+      position: relative;
+    }
+
+    select, input[type="text"], input[type="password"] {
       width: 100%;
-      padding: 0.9rem;
-      border-radius: 0.5rem;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1rem;
-      border: none;
+      padding: 0.78rem 1rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 0.65rem;
+      color: #f8fafc;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    select {
       cursor: pointer;
-      box-sizing: border-box;
-      transition: opacity 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.85rem center;
+      background-size: 1.1rem;
+      padding-right: 2.5rem;
     }
-    .btn-install:hover {
-      opacity: 0.9;
+
+    select option {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 0.5rem;
     }
+
+    select:focus, input:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
+      background: #0e1526;
+    }
+
+    .hint {
+      font-size: 0.74rem;
+      color: var(--text-sub);
+      margin-top: 0.35rem;
+      line-height: 1.35;
+    }
+
+    /* Dynamic AI groups */
     #apiKeyGroup, #modelGroup {
       display: none;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Manifest Box */
+    .manifest-box-wrap {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #manifestUrlInput {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: #070b14;
+    }
+
+    .btn-copy {
+      padding: 0 1.2rem;
+      border-radius: 0.65rem;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-indigo);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-copy:hover {
+      background: rgba(99, 102, 241, 0.28);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #ffffff;
+    }
+
+    /* Action Buttons */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.95rem 1.5rem;
+      border-radius: 0.75rem;
+      background: var(--primary-gradient);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+      opacity: 0.96;
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.8rem 1.25rem;
+      border-radius: 0.75rem;
+      background: rgba(30, 41, 59, 0.7);
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 0.88rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(51, 65, 85, 0.8);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 1.75rem;
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+
+    .footer a {
+      color: var(--accent-indigo);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer a:hover {
+      color: var(--accent-cyan);
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>nifael AI subtitle</h1>
-    <p>AI Subtitle Translation for OpenSubtitles, SubDL & SubSource</p>
-    
-    <!-- 1. Language -->
-    <div class="form-group">
-      <label for="languageSelect">1. Target Language:</label>
-      <select id="languageSelect" onchange="updateManifestUrl()">
-        <option value="af">Afrikaans</option>
-        <option value="sq">Albanian (Shqip)</option>
-        <option value="am">Amharic (አማርኛ)</option>
-        <option value="ar">Arabic (العربية)</option>
-        <option value="hy">Armenian (Հայերեն)</option>
-        <option value="as">Assamese (অসমীয়া)</option>
-        <option value="ay">Aymara</option>
-        <option value="az">Azerbaijani (Azərbaycan)</option>
-        <option value="bm">Bambara</option>
-        <option value="eu">Basque (Euskara)</option>
-        <option value="be">Belarusian (Беларуская)</option>
-        <option value="bn">Bengali (বাংলা)</option>
-        <option value="bho">Bhojpuri (भोजपुरी)</option>
-        <option value="bs">Bosnian (Bosanski)</option>
-        <option value="bg">Bulgarian (Български)</option>
-        <option value="ca">Catalan (Català)</option>
-        <option value="ceb">Cebuano</option>
-        <option value="ny">Chichewa (Nyanja)</option>
-        <option value="zh-CN">Chinese (Simplified) (简体中文)</option>
-        <option value="zh-TW">Chinese (Traditional) (繁體中文)</option>
-        <option value="co">Corsican (Corsu)</option>
-        <option value="hr">Croatian (Hrvatski)</option>
-        <option value="cs">Czech (Čeština)</option>
-        <option value="da">Danish (Dansk)</option>
-        <option value="dv">Dhivehi (ދިވެހި)</option>
-        <option value="doi">Dogri (डोगरी)</option>
-        <option value="nl">Dutch (Nederlands)</option>
-        <option value="en" selected>English</option>
-        <option value="eo">Esperanto</option>
-        <option value="et">Estonian (Eesti)</option>
-        <option value="ee">Ewe (Èʋegbe)</option>
-        <option value="tl">Filipino (Tagalog)</option>
-        <option value="fi">Finnish (Suomi)</option>
-        <option value="fr">French (Français)</option>
-        <option value="fy">Frisian (Frysk)</option>
-        <option value="gl">Galician (Galego)</option>
-        <option value="ka">Georgian (ქართული)</option>
-        <option value="de">German (Deutsch)</option>
-        <option value="el">Greek (Ελληνικά)</option>
-        <option value="gn">Guarani</option>
-        <option value="gu">Gujarati (ગુજરાતી)</option>
-        <option value="ht">Haitian Creole (Kreyòl)</option>
-        <option value="ha">Hausa</option>
-        <option value="haw">Hawaiian (ʻŌlelo Hawaiʻi)</option>
-        <option value="iw">Hebrew (עברית)</option>
-        <option value="hi">Hindi (हिन्दी)</option>
-        <option value="hmn">Hmong</option>
-        <option value="hu">Hungarian (Magyar)</option>
-        <option value="is">Icelandic (Íslenska)</option>
-        <option value="ig">Igbo</option>
-        <option value="ilo">Ilocano</option>
-        <option value="id">Indonesian (Bahasa Indonesia)</option>
-        <option value="ga">Irish (Gaeilge)</option>
-        <option value="it">Italian (Italiano)</option>
-        <option value="ja">Japanese (日本語)</option>
-        <option value="jv">Javanese (Basa Jawa)</option>
-        <option value="kn">Kannada (ಕನ್ನಡ)</option>
-        <option value="kk">Kazakh (Қазақша)</option>
-        <option value="km">Khmer (ខ្មែរ)</option>
-        <option value="rw">Kinyarwanda</option>
-        <option value="gom">Konkani (कोंकणी)</option>
-        <option value="ko">Korean (한국어)</option>
-        <option value="kri">Krio</option>
-        <option value="ku">Kurdish (Kurmanji)</option>
-        <option value="ckb">Kurdish (Sorani)</option>
-        <option value="ky">Kyrgyz (Кыргызча)</option>
-        <option value="lo">Lao (ລາວ)</option>
-        <option value="la">Latin (Latina)</option>
-        <option value="lv">Latvian (Latviešu)</option>
-        <option value="ln">Lingala</option>
-        <option value="lt">Lithuanian (Lietuvių)</option>
-        <option value="lg">Luganda</option>
-        <option value="lb">Luxembourgish (Lëtzebuergesch)</option>
-        <option value="mk">Macedonian (Македонски)</option>
-        <option value="mai">Maithili (मैथिली)</option>
-        <option value="mg">Malagasy</option>
-        <option value="ms">Malay (Bahasa Melayu)</option>
-        <option value="ml">Malayalam (മലയാളം)</option>
-        <option value="mt">Maltese (Malti)</option>
-        <option value="mi">Maori (Te Reo Māori)</option>
-        <option value="mr">Marathi (मराठी)</option>
-        <option value="mni-Mtei">Meiteilon (Manipuri)</option>
-        <option value="lus">Mizo</option>
-        <option value="mn">Mongolian (Монгол)</option>
-        <option value="my">Myanmar (Burmese) (မြန်မာ)</option>
-        <option value="ne">Nepali (नेपाली)</option>
-        <option value="nso">Northern Sotho (Sepedi)</option>
-        <option value="no">Norwegian (Norsk)</option>
-        <option value="or">Odia (Oriya) (ଓଡ଼ିଆ)</option>
-        <option value="om">Oromo</option>
-        <option value="ps">Pashto (پښتو)</option>
-        <option value="fa">Persian (فارسی)</option>
-        <option value="pl">Polish (Polski)</option>
-        <option value="pt">Portuguese (Português)</option>
-        <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
-        <option value="qu">Quechua</option>
-        <option value="ro">Romanian (Română)</option>
-        <option value="ru">Russian (Русский)</option>
-        <option value="sm">Samoan (Gagana Samoa)</option>
-        <option value="sa">Sanskrit (संस्कृत)</option>
-        <option value="gd">Scots Gaelic (Gàidhlig)</option>
-        <option value="sr">Serbian (Српски)</option>
-        <option value="st">Sesotho</option>
-        <option value="sn">Shona</option>
-        <option value="sd">Sindhi (سنڌي)</option>
-        <option value="si">Sinhala (සිංහල)</option>
-        <option value="sk">Slovak (Slovenčina)</option>
-        <option value="sl">Slovenian (Slovenščina)</option>
-        <option value="so">Somali (Soomaali)</option>
-        <option value="es">Spanish (Español)</option>
-        <option value="su">Sundanese (Basa Sunda)</option>
-        <option value="sw">Swahili (Kiswahili)</option>
-        <option value="sv">Swedish (Svenska)</option>
-        <option value="tg">Tajik (Тоҷикӣ)</option>
-        <option value="ta">Tamil (தமிழ்)</option>
-        <option value="tt">Tatar (Татар)</option>
-        <option value="te">Telugu (తెలుగు)</option>
-        <option value="th">Thai (ไทย)</option>
-        <option value="ti">Tigrinya (ትግርኛ)</option>
-        <option value="ts">Tsonga</option>
-        <option value="tr">Turkish (Türkçe)</option>
-        <option value="tk">Turkmen (Türkmençe)</option>
-        <option value="ak">Twi (Akan)</option>
-        <option value="uk">Ukrainian (Українська)</option>
-        <option value="ur">Urdu (اردو)</option>
-        <option value="ug">Uyghur (ئۇيغۇرچە)</option>
-        <option value="uz">Uzbek (Oʻzbek)</option>
-        <option value="vi">Vietnamese (Tiếng Việt)</option>
-        <option value="cy">Welsh (Cymraeg)</option>
-        <option value="xh">Xhosa (isiXhosa)</option>
-        <option value="yi">Yiddish (ייִדיש)</option>
-        <option value="yo">Yoruba (Èdè Yorùbá)</option>
-        <option value="zu">Zulu (isiZulu)</option>
-      </select>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand-badge-container">
+        <span class="status-dot"></span>
+        <span class="brand-badge-text">Stremio Addon</span>
+        <span class="brand-version">v1.0.0</span>
+      </div>
+      <h1>nifael AI subtitle</h1>
+      <p class="subtitle">AI-Powered Subtitle Aggregator & Real-Time Dialogue Translator</p>
     </div>
 
-    <!-- 2. AI Engine -->
-    <div class="form-group">
-      <label for="engineSelect">2. Translation Engine:</label>
-      <select id="engineSelect" onchange="handleEngineChange()">
-        <option value="google" selected>Google Translate (Free, Instant, No Key)</option>
-        <option value="gemini">Google Gemini AI (Custom Model Support)</option>
-        <option value="openai">OpenAI (Custom Model Support)</option>
-        <option value="deepl">DeepL API (Pro Accuracy)</option>
-      </select>
-    </div>
-
-    <!-- Dynamic AI Key -->
-    <div class="form-group" id="apiKeyGroup">
-      <label for="apiKeyInput" id="apiKeyLabel">AI API Key: <span class="optional-badge">Optional</span></label>
-      <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl()">
-      <div class="hint" id="apiKeyHint">Leave blank to use the server's default fallback key.</div>
-    </div>
-
-    <!-- Dynamic Custom Model -->
-    <div class="form-group" id="modelGroup">
-      <label for="modelInput" id="modelLabel">Custom AI Model: <span class="optional-badge">Optional</span></label>
-      <input type="text" id="modelInput" placeholder="e.g. gemini-1.5-flash" oninput="updateManifestUrl()">
-      <div class="hint" id="modelHint">Leave blank for default model, or specify any model ID.</div>
-    </div>
-
-    <div class="divider"></div>
-    <div class="section-title">Subtitle Provider Keys (Optional)</div>
-
-    <!-- OpenSubtitles Key -->
-    <div class="form-group">
-      <label for="osKeyInput">OpenSubtitles.com API Key: <span class="optional-badge">Optional</span></label>
-      <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user key" oninput="updateManifestUrl()">
-      <div class="hint">Leave blank to use the free public database (no key required).</div>
-    </div>
-
-    <!-- SubDL Key -->
-    <div class="form-group">
-      <label for="subdlKeyInput">SubDL API Key: <span class="optional-badge">Optional</span></label>
-      <input type="password" id="subdlKeyInput" placeholder="Optional SubDL user API key" oninput="updateManifestUrl()">
-      <div class="hint">Paste your personal SubDL API key (free at subdl.com) if available.</div>
-    </div>
-
-    <!-- SubSource Key -->
-    <div class="form-group">
-      <label for="subsourceKeyInput">SubSource API Key: <span class="optional-badge">Optional</span></label>
-      <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource user API key" oninput="updateManifestUrl()">
-      <div class="hint">Paste your personal SubSource API key (from subsource.net) if available.</div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Manifest URL -->
-    <div class="form-group">
-      <label for="manifestUrlInput">Manifest URL (Click to copy):</label>
-      <div class="url-box">
-        <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()">
-        <button class="btn-copy" id="copyBtn" onclick="copyManifestUrl()">Copy URL</button>
+    <!-- 1. Language Settings -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-icon">🌐</div>
+          <span class="section-title">Target Language</span>
+        </div>
+        <span class="pill-badge badge-free">130+ Languages</span>
+      </div>
+      <div class="form-group">
+        <label for="languageSelect">Select Subtitle Target Language</label>
+        <div class="control-wrap">
+          <select id="languageSelect" onchange="updateManifestUrl()">
+            <option value="af">Afrikaans</option>
+            <option value="sq">Albanian (Shqip)</option>
+            <option value="am">Amharic (አማርኛ)</option>
+            <option value="ar">Arabic (العربية)</option>
+            <option value="hy">Armenian (Հայերեն)</option>
+            <option value="as">Assamese (অসমীয়া)</option>
+            <option value="ay">Aymara</option>
+            <option value="az">Azerbaijani (Azərbaycan)</option>
+            <option value="bm">Bambara</option>
+            <option value="eu">Basque (Euskara)</option>
+            <option value="be">Belarusian (Беларуская)</option>
+            <option value="bn">Bengali (বাংলা)</option>
+            <option value="bho">Bhojpuri (भोजपुरी)</option>
+            <option value="bs">Bosnian (Bosanski)</option>
+            <option value="bg">Bulgarian (Български)</option>
+            <option value="ca">Catalan (Català)</option>
+            <option value="ceb">Cebuano</option>
+            <option value="ny">Chichewa (Nyanja)</option>
+            <option value="zh-CN">Chinese (Simplified) (简体中文)</option>
+            <option value="zh-TW">Chinese (Traditional) (繁體中文)</option>
+            <option value="co">Corsican (Corsu)</option>
+            <option value="hr">Croatian (Hrvatski)</option>
+            <option value="cs">Czech (Čeština)</option>
+            <option value="da">Danish (Dansk)</option>
+            <option value="dv">Dhivehi (ދިވެހި)</option>
+            <option value="doi">Dogri (डोगरी)</option>
+            <option value="nl">Dutch (Nederlands)</option>
+            <option value="en" selected>English</option>
+            <option value="eo">Esperanto</option>
+            <option value="et">Estonian (Eesti)</option>
+            <option value="ee">Ewe (Èʋegbe)</option>
+            <option value="tl">Filipino (Tagalog)</option>
+            <option value="fi">Finnish (Suomi)</option>
+            <option value="fr">French (Français)</option>
+            <option value="fy">Frisian (Frysk)</option>
+            <option value="gl">Galician (Galego)</option>
+            <option value="ka">Georgian (ქართული)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="el">Greek (Ελληνικά)</option>
+            <option value="gn">Guarani</option>
+            <option value="gu">Gujarati (ગુજરાતી)</option>
+            <option value="ht">Haitian Creole (Kreyòl)</option>
+            <option value="ha">Hausa</option>
+            <option value="haw">Hawaiian (ʻŌlelo Hawaiʻi)</option>
+            <option value="iw">Hebrew (עברית)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="hmn">Hmong</option>
+            <option value="hu">Hungarian (Magyar)</option>
+            <option value="is">Icelandic (Íslenska)</option>
+            <option value="ig">Igbo</option>
+            <option value="ilo">Ilocano</option>
+            <option value="id">Indonesian (Bahasa Indonesia)</option>
+            <option value="ga">Irish (Gaeilge)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="jv">Javanese (Basa Jawa)</option>
+            <option value="kn">Kannada (ಕನ್ನಡ)</option>
+            <option value="kk">Kazakh (Қазақша)</option>
+            <option value="km">Khmer (ខ្មែរ)</option>
+            <option value="rw">Kinyarwanda</option>
+            <option value="gom">Konkani (कोंकणी)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="kri">Krio</option>
+            <option value="ku">Kurdish (Kurmanji)</option>
+            <option value="ckb">Kurdish (Sorani)</option>
+            <option value="ky">Kyrgyz (Кыргызча)</option>
+            <option value="lo">Lao (ລາວ)</option>
+            <option value="la">Latin (Latina)</option>
+            <option value="lv">Latvian (Latviešu)</option>
+            <option value="ln">Lingala</option>
+            <option value="lt">Lithuanian (Lietuvių)</option>
+            <option value="lg">Luganda</option>
+            <option value="lb">Luxembourgish (Lëtzebuergesch)</option>
+            <option value="mk">Macedonian (Македонски)</option>
+            <option value="mai">Maithili (मैथिली)</option>
+            <option value="mg">Malagasy</option>
+            <option value="ms">Malay (Bahasa Melayu)</option>
+            <option value="ml">Malayalam (മലയാളം)</option>
+            <option value="mt">Maltese (Malti)</option>
+            <option value="mi">Maori (Te Reo Māori)</option>
+            <option value="mr">Marathi (मराठी)</option>
+            <option value="mni-Mtei">Meiteilon (Manipuri)</option>
+            <option value="lus">Mizo</option>
+            <option value="mn">Mongolian (Монгол)</option>
+            <option value="my">Myanmar (Burmese) (မြန်မာ)</option>
+            <option value="ne">Nepali (नेपाली)</option>
+            <option value="nso">Northern Sotho (Sepedi)</option>
+            <option value="no">Norwegian (Norsk)</option>
+            <option value="or">Odia (Oriya) (ଓଡ଼ିଆ)</option>
+            <option value="om">Oromo</option>
+            <option value="ps">Pashto (پښتو)</option>
+            <option value="fa">Persian (فارسی)</option>
+            <option value="pl">Polish (Polski)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+            <option value="qu">Quechua</option>
+            <option value="ro">Romanian (Română)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="sm">Samoan (Gagana Samoa)</option>
+            <option value="sa">Sanskrit (संस्कृत)</option>
+            <option value="gd">Scots Gaelic (Gàidhlig)</option>
+            <option value="sr">Serbian (Српски)</option>
+            <option value="st">Sesotho</option>
+            <option value="sn">Shona</option>
+            <option value="sd">Sindhi (سنڌي)</option>
+            <option value="si">Sinhala (සිංහල)</option>
+            <option value="sk">Slovak (Slovenčina)</option>
+            <option value="sl">Slovenian (Slovenščina)</option>
+            <option value="so">Somali (Soomaali)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="su">Sundanese (Basa Sunda)</option>
+            <option value="sw">Swahili (Kiswahili)</option>
+            <option value="sv">Swedish (Svenska)</option>
+            <option value="tg">Tajik (Тоҷикӣ)</option>
+            <option value="ta">Tamil (தமிழ்)</option>
+            <option value="tt">Tatar (Татар)</option>
+            <option value="te">Telugu (తెలుగు)</option>
+            <option value="th">Thai (ไทย)</option>
+            <option value="ti">Tigrinya (ትግርኛ)</option>
+            <option value="ts">Tsonga</option>
+            <option value="tr">Turkish (Türkçe)</option>
+            <option value="tk">Turkmen (Türkmençe)</option>
+            <option value="ak">Twi (Akan)</option>
+            <option value="uk">Ukrainian (Українська)</option>
+            <option value="ur">Urdu (اردو)</option>
+            <option value="ug">Uyghur (ئۇيغۇرچە)</option>
+            <option value="uz">Uzbek (Oʻzbek)</option>
+            <option value="vi">Vietnamese (Tiếng Việt)</option>
+            <option value="cy">Welsh (Cymraeg)</option>
+            <option value="xh">Xhosa (isiXhosa)</option>
+            <option value="yi">Yiddish (ייִדיש)</option>
+            <option value="yo">Yoruba (Èdè Yorùbá)</option>
+            <option value="zu">Zulu (isiZulu)</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-      <button class="btn-install" onclick="installAddon()">Install to Stremio (App)</button>
-      <button class="btn-copy" style="width: 100%; padding: 0.8rem;" onclick="installWebAddon()">Open in Stremio Web</button>
+    <!-- 2. AI Engine Settings -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-icon">⚡</div>
+          <span class="section-title">AI Translation Engine</span>
+        </div>
+        <span class="pill-badge badge-free" id="engineBadge">Free Instant</span>
+      </div>
+
+      <div class="form-group">
+        <label for="engineSelect">Translation Provider</label>
+        <div class="control-wrap">
+          <select id="engineSelect" onchange="handleEngineChange()">
+            <option value="google" selected>Google Translate (Free, Instant, Zero Config)</option>
+            <option value="gemini">Google Gemini AI (High Context & Quality)</option>
+            <option value="openai">OpenAI (GPT-4o / Custom Model)</option>
+            <option value="deepl">DeepL API (Pro Accuracy)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Dynamic API Key Input -->
+      <div class="form-group" id="apiKeyGroup">
+        <label for="apiKeyInput" id="apiKeyLabel">API Key</label>
+        <div class="control-wrap">
+          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl()">
+        </div>
+        <div class="hint" id="apiKeyHint">Leave blank to use the server's fallback key if available.</div>
+      </div>
+
+      <!-- Dynamic Custom Model Input -->
+      <div class="form-group" id="modelGroup">
+        <label for="modelInput" id="modelLabel">Custom Model ID</label>
+        <div class="control-wrap">
+          <input type="text" id="modelInput" placeholder="e.g. gemini-1.5-flash" oninput="updateManifestUrl()">
+        </div>
+        <div class="hint" id="modelHint">Leave blank for default model, or specify any model ID.</div>
+      </div>
+    </div>
+
+    <!-- 3. Subtitle Provider Keys -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-icon">🔑</div>
+          <span class="section-title">Subtitle Provider Keys</span>
+        </div>
+        <span class="pill-badge badge-opt">Optional</span>
+      </div>
+
+      <!-- OpenSubtitles Key -->
+      <div class="form-group">
+        <label for="osKeyInput">
+          <span>OpenSubtitles.com VIP Key</span>
+          <span class="pill-badge badge-opt">Optional</span>
+        </label>
+        <div class="control-wrap">
+          <input type="password" id="osKeyInput" placeholder="Optional OpenSubtitles VIP / user API key" oninput="updateManifestUrl()">
+        </div>
+        <div class="hint">Leave blank to use the high-speed public database (no key needed).</div>
+      </div>
+
+      <!-- SubDL Key -->
+      <div class="form-group">
+        <label for="subdlKeyInput">
+          <span>SubDL API Key</span>
+          <span class="pill-badge badge-opt">Optional</span>
+        </label>
+        <div class="control-wrap">
+          <input type="password" id="subdlKeyInput" placeholder="Optional SubDL personal key" oninput="updateManifestUrl()">
+        </div>
+        <div class="hint">Paste your free SubDL API key (from subdl.com) if available.</div>
+      </div>
+
+      <!-- SubSource Key -->
+      <div class="form-group">
+        <label for="subsourceKeyInput">
+          <span>SubSource API Key</span>
+          <span class="pill-badge badge-opt">Optional</span>
+        </label>
+        <div class="control-wrap">
+          <input type="password" id="subsourceKeyInput" placeholder="Optional SubSource personal key" oninput="updateManifestUrl()">
+        </div>
+        <div class="hint">Paste your personal SubSource API key (from subsource.net) if available.</div>
+      </div>
+    </div>
+
+    <!-- 4. Manifest & Installation -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-icon">🚀</div>
+          <span class="section-title">Addon Installation</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="manifestUrlInput">Manifest URL (Click to copy)</label>
+        <div class="manifest-box-wrap">
+          <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()">
+          <button class="btn-copy" id="copyBtn" onclick="copyManifestUrl()">
+            <span id="copyIcon">📋</span>
+            <span id="copyText">Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="actions-grid">
+        <button class="btn-primary" onclick="installAddon()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          Install to Stremio (App)
+        </button>
+        <button class="btn-secondary" onclick="installWebAddon()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          Open in Stremio Web
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Powered by <a href="https://github.com/nifael06/nifael-ai-subtitle" target="_blank">nifael AI subtitle</a> • OpenSubtitles, SubDL & SubSource</p>
     </div>
   </div>
 
@@ -359,24 +705,31 @@
       const modelGroup = document.getElementById("modelGroup");
       const modelInput = document.getElementById("modelInput");
       const modelHint = document.getElementById("modelHint");
+      const engineBadge = document.getElementById("engineBadge");
 
       if (engine === "google") {
         keyGroup.style.display = "none";
         modelGroup.style.display = "none";
+        engineBadge.textContent = "Free Instant";
+        engineBadge.className = "pill-badge badge-free";
       } else if (engine === "deepl") {
         keyGroup.style.display = "block";
-        keyLabel.innerHTML = 'DeepL API Key: <span class="optional-badge">Optional</span>';
+        keyLabel.textContent = "DeepL API Key";
         modelGroup.style.display = "none";
+        engineBadge.textContent = "Pro Accuracy";
+        engineBadge.className = "pill-badge badge-ai";
       } else {
         keyGroup.style.display = "block";
         modelGroup.style.display = "block";
+        engineBadge.textContent = "AI Powered";
+        engineBadge.className = "pill-badge badge-ai";
 
         if (engine === "gemini") {
-          keyLabel.innerHTML = 'Google Gemini API Key: <span class="optional-badge">Optional</span>';
+          keyLabel.textContent = "Google Gemini API Key";
           modelInput.placeholder = "e.g. gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash";
           modelHint.textContent = "Default: gemini-1.5-flash. You can specify any Gemini model ID.";
         } else if (engine === "openai") {
-          keyLabel.innerHTML = 'OpenAI API Key: <span class="optional-badge">Optional</span>';
+          keyLabel.textContent = "OpenAI API Key";
           modelInput.placeholder = "e.g. gpt-4o-mini, gpt-4o";
           modelHint.textContent = "Default: gpt-4o-mini. You can specify any OpenAI model ID.";
         }
@@ -419,11 +772,19 @@
 
     function showCopiedFeedback() {
       const btn = document.getElementById("copyBtn");
-      btn.textContent = "Copied! ✓";
-      btn.style.background = "#22c55e";
+      const text = document.getElementById("copyText");
+      const icon = document.getElementById("copyIcon");
+      text.textContent = "Copied!";
+      icon.textContent = "✓";
+      btn.style.background = "rgba(52, 211, 153, 0.2)";
+      btn.style.borderColor = "rgba(52, 211, 153, 0.5)";
+      btn.style.color = "#34d399";
       setTimeout(() => {
-        btn.textContent = "Copy URL";
-        btn.style.background = "#334155";
+        text.textContent = "Copy";
+        icon.textContent = "📋";
+        btn.style.background = "rgba(99, 102, 241, 0.15)";
+        btn.style.borderColor = "rgba(99, 102, 241, 0.3)";
+        btn.style.color = "var(--accent-indigo)";
       }, 2000);
     }
 
