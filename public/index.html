@@ -1178,6 +1178,8 @@
           if (configData.engine && document.querySelector(`#engineSelect option[value="${configData.engine}"]`)) {
             document.getElementById("engineSelect").value = configData.engine;
           }
+          handleEngineChange();
+
           if (configData.apiKey) document.getElementById("apiKeyInput").value = configData.apiKey;
           if (configData.model) document.getElementById("modelInput").value = configData.model;
           if (configData.osKey) document.getElementById("osKeyInput").value = configData.osKey;
@@ -1188,13 +1190,16 @@
             const details = document.getElementById("providerDetails");
             if (details) details.open = true;
           }
+        } else {
+          handleEngineChange();
         }
-      } catch (err) {}
+      } catch (err) {
+        handleEngineChange();
+      }
+      updateManifestUrl();
     }
 
     loadConfigFromUrl();
-    handleEngineChange();
-    updateManifestUrl();
   </script>
 </body>
 </html>

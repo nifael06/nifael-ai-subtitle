@@ -6,7 +6,11 @@ const manifest = {
   resources: ["subtitles"],
   types: ["movie", "series"],
   idPrefixes: ["tt"],
-  catalogs: []
+  catalogs: [],
+  behaviorHints: {
+    configurable: true,
+    configurationRequired: false
+  }
 };
 
 module.exports = manifest;
