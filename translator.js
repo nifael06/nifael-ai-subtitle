@@ -7,10 +7,12 @@ const DEEPL_LANGUAGES = new Set([
   "PT-PT", "RO", "RU", "SK", "SL", "SV", "TR", "UK", "ZH"
 ]);
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
- * 1. Google Translate Engine (Free, uses POST to prevent URL length limits)
+ * 1. Google Translate Engine (Free, uses POST to prevent URL length limits with 429 retry)
  */
-async function translateWithGoogle(textBatch, targetLang) {
+async function translateWithGoogle(textBatch, targetLang, retries = 1) {
   try {
     const params = new URLSearchParams();
     params.append("client", "gtx");
@@ -33,7 +35,13 @@ async function translateWithGoogle(textBatch, targetLang) {
     }
     return textBatch;
   } catch (error) {
-    console.error("[Google Translate error]:", error.message);
+    const status = error.response?.status;
+    if (status === 429 && retries > 0) {
+      console.warn(`[Google Translate] 429 Rate Limit hit. Retrying after 300ms... (${retries} retry left)`);
+      await sleep(300);
+      return await translateWithGoogle(textBatch, targetLang, retries - 1);
+    }
+    console.error("[Google Translate error]:", error.response?.status ? `HTTP ${error.response.status}` : error.message);
     return textBatch;
   }
 }
@@ -251,14 +259,19 @@ async function translateCues(cues, targetLang = "en", engine = "google", apiKey 
     chunks.push(cues.slice(i, i + BATCH_SIZE));
   }
 
-  // High concurrency pool — saturate API throughput
-  const CONCURRENCY = engine === "google" ? 8 : engine === "deepl" ? 5 : 6;
+  // High concurrency pool — rate-limit safe for Google Translate (3 workers + stagger)
+  const CONCURRENCY = engine === "google" ? 3 : engine === "deepl" ? 5 : 4;
   const results = new Array(chunks.length);
   let currentIndex = 0;
   let quotaExceeded = false;
   let quotaEngine = "";
 
-  async function worker() {
+  async function worker(workerId) {
+    // Initial worker stagger to avoid concurrent burst on startup
+    if ((engine === "google" || quotaExceeded) && workerId > 0) {
+      await sleep(workerId * 100);
+    }
+
     while (currentIndex < chunks.length) {
       const idx = currentIndex++;
       try {
@@ -285,11 +298,16 @@ async function translateCues(cues, targetLang = "en", engine = "google", apiKey 
           results[idx] = chunks[idx];
         }
       }
+
+      // 100ms stagger between chunk requests for Google Translate to prevent 429 rate limits
+      if (engine === "google" || quotaExceeded) {
+        await sleep(100);
+      }
     }
   }
 
   const workerCount = Math.min(CONCURRENCY, chunks.length);
-  const workers = Array.from({ length: workerCount }, () => worker());
+  const workers = Array.from({ length: workerCount }, (_, i) => worker(i));
   await Promise.all(workers);
 
   const elapsed = Date.now() - startTime;

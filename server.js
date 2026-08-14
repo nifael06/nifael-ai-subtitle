@@ -204,11 +204,15 @@ app.get("/api/render-sub", async (req, res) => {
       console.warn(`[nifael AI] ${engineName} quota exceeded — injecting warning cue and serving Google Translate fallback`);
 
       const warningCue = {
-        start: "00:00:02.000",
-        end: "00:00:15.000",
-        text: `⚠️ [nifael AI Warning]: Your ${engineName} API key has exceeded its quota limit!\nFalling back to Free Google Translation.`
+        id: "1",
+        startTime: "00:00:01,000",
+        endTime: "00:00:15,000",
+        text: `⚠️ [nifael AI Warning]: Your ${engineName} API key quota was exceeded! Showing Free Google Translation.`
       };
-      translatedCues = [warningCue, ...translatedCues];
+      translatedCues = [warningCue, ...translatedCues].map((cue, idx) => ({
+        ...cue,
+        id: String(idx + 1)
+      }));
     }
 
     // 4. Build standard WebVTT

@@ -134,13 +134,15 @@ function cleanCues(cues) {
 function cuesToVtt(cues) {
   let vtt = "WEBVTT\n\n";
 
-  cues.forEach((cue) => {
-    const startTime = cue.startTime.replace(",", ".");
-    const endTime = cue.endTime.replace(",", ".");
+  cues.forEach((cue, index) => {
+    const startTime = String(cue?.startTime || cue?.start || "00:00:00.000").replace(",", ".");
+    const endTime = String(cue?.endTime || cue?.end || "00:00:00.000").replace(",", ".");
+    const text = cue?.text || "";
+    const id = String(cue?.id || index + 1);
 
-    vtt += `${cue.id}\n`;
+    vtt += `${id}\n`;
     vtt += `${startTime} --> ${endTime}\n`;
-    vtt += `${cue.text}\n\n`;
+    vtt += `${text}\n\n`;
   });
 
   return vtt;
