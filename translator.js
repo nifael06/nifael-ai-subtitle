@@ -262,8 +262,9 @@ class QuotaExceededError extends Error {
   }
 }
 
-// Active Google Gemini models in order of priority (Only Gemini 3.5 Flash Lite and newer)
+// Active Google Gemini models in order of priority (Gemini 3.5 Live Translate and newer)
 const GEMINI_ACTIVE_MODELS = [
+  "gemini-3.5-live-translate",
   "gemini-3.5-flash-lite",
   "gemini-3.5-flash",
   "gemini-3.6-flash",
@@ -273,12 +274,12 @@ const GEMINI_ACTIVE_MODELS = [
 ];
 
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return "gemini-3.5-flash-lite";
+  if (!customModel || typeof customModel !== "string") return "gemini-3.5-live-translate";
   const trimmed = customModel.trim();
-  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-flash-lite
+  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-live-translate
   if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-flash-lite'.`);
-    return "gemini-3.5-flash-lite";
+    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate'.`);
+    return "gemini-3.5-live-translate";
   }
   return trimmed;
 }

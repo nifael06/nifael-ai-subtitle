@@ -1,7 +1,8 @@
 const axios = require("axios");
 
-// Only Gemini 3.5 Flash Lite and newer models
+// Only Gemini 3.5 Live Translate and newer models
 const GEMINI_LIVE_MODELS = [
+  "gemini-3.5-live-translate",
   "gemini-3.5-flash-lite",
   "gemini-3.5-flash",
   "gemini-3.6-flash",
@@ -22,14 +23,14 @@ const SAFETY_SETTINGS = [
  * Filter and sanitize model name to ensure only Gemini 3.5+ models are used
  */
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return "gemini-3.5-flash-lite";
-  const trimmed = customModel.trim().toLowerCase();
-  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to 3.5-flash-lite
+  if (!customModel || typeof customModel !== "string") return "gemini-3.5-live-translate";
+  const trimmed = customModel.trim();
+  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to gemini-3.5-live-translate
   if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-flash-lite'.`);
-    return "gemini-3.5-flash-lite";
+    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate'.`);
+    return "gemini-3.5-live-translate";
   }
-  return customModel.trim();
+  return trimmed;
 }
 
 /**

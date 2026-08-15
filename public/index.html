@@ -780,16 +780,17 @@
       <div class="form-group" id="modelGroup">
         <label for="modelInput" id="modelLabel">Custom Model ID</label>
         <div class="control-wrap">
-          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
+          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-live-translate, gemini-3.5-flash-lite, gemini-3.5-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
           <datalist id="modelPresets">
-            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Live Translate - Ultra-Fast)</option>
-            <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
-            <option value="gemini-3.6-flash">gemini-3.6-flash (Enhanced Multimodal Speed)</option>
-            <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
-            <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
+            <option value="gemini-3.5-live-translate">gemini-3.5-live-translate (Gemini 3.5 Live Translate - Ultra-Fast)</option>
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Flash Lite)</option>
+            <option value="gemini-3.5-flash">gemini-3.5-flash (Gemini 3.5 Flash)</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (Gemini 3.6 Flash)</option>
+            <option value="gemini-3.7-flash">gemini-3.7-flash (Gemini 3.7 Flash)</option>
+            <option value="gemini-3.5-pro">gemini-3.5-pro (Gemini 3.5 Pro)</option>
           </datalist>
         </div>
-        <div class="hint" id="modelHint">Default: Gemini 3.5 Live Translate (gemini-3.5-flash-lite). Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash and newer models.</div>
+        <div class="hint" id="modelHint">Default: Gemini 3.5 Live Translate (gemini-3.5-live-translate). Supports Gemini 3.5 Live Translate and newer models.</div>
       </div>
     </div>
 
@@ -968,12 +969,13 @@
         if (engine === "gemini_live") {
           engineBadge.textContent = "Gemini 3.5 Live ⚡";
           keyLabel.textContent = "Google Gemini API Key";
-          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash";
-          modelHint.textContent = "Default: Gemini 3.5 Live Translate (gemini-3.5-flash-lite). High-speed progressive streaming and zero-subtitle live audio transcription.";
+          modelInput.placeholder = "e.g. gemini-3.5-live-translate, gemini-3.5-flash-lite, gemini-3.5-flash";
+          modelHint.textContent = "Default: Gemini 3.5 Live Translate (gemini-3.5-live-translate). High-speed progressive streaming and zero-subtitle live audio transcription.";
           const datalist = document.getElementById("modelPresets");
           if (datalist) {
             datalist.innerHTML = `
-              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Live Translate - Ultra-Fast)</option>
+              <option value="gemini-3.5-live-translate">gemini-3.5-live-translate (Gemini 3.5 Live Translate - Ultra-Fast)</option>
+              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Flash Lite)</option>
               <option value="gemini-3.5-flash">gemini-3.5-flash (Gemini 3.5 Flash)</option>
               <option value="gemini-3.6-flash">gemini-3.6-flash (Gemini 3.6 Flash)</option>
               <option value="gemini-3.7-flash">gemini-3.7-flash (Gemini 3.7 Flash)</option>
