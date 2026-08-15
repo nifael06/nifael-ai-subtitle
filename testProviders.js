@@ -21,8 +21,8 @@ async function test() {
     console.log(`Parsed ${rawCues.length} cues, cleaned to ${cleanedCues.length} cues.`);
 
     console.log("\n--- 4. Testing Translation & WebVTT Generation (first 5 cues) ---");
-    const translated = await translateCues(cleanedCues.slice(0, 5), "en", "google");
-    const vtt = cuesToVtt(translated);
+    const result = await translateCues(cleanedCues.slice(0, 5), "ms", "google");
+    const vtt = cuesToVtt(result.cues);
     console.log("Generated WebVTT output:\n" + vtt);
   }
 }

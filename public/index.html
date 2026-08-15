@@ -755,6 +755,7 @@
         <div class="control-wrap">
           <select id="engineSelect" onchange="handleEngineChange(); markUnsaved()">
             <option value="google" selected>Google Translate (Free, Instant, Zero Config)</option>
+            <option value="gemini_live">Google Gemini Live (Ultra-Fast Stream & Audio AI)</option>
             <option value="gemini">Google Gemini AI (High Context & Quality)</option>
             <option value="openai">OpenAI (GPT-4o / Custom Model)</option>
             <option value="deepl">DeepL API (Pro Accuracy)</option>
@@ -779,15 +780,16 @@
       <div class="form-group" id="modelGroup">
         <label for="modelInput" id="modelLabel">Custom Model ID</label>
         <div class="control-wrap">
-          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
+          <input type="text" id="modelInput" list="modelPresets" placeholder="e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
           <datalist id="modelPresets">
             <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra Fast)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (Enhanced Multimodal Speed)</option>
             <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
             <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
           </datalist>
         </div>
-        <div class="hint" id="modelHint">Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash and newer models.</div>
+        <div class="hint" id="modelHint">Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash and newer models.</div>
       </div>
     </div>
 
@@ -938,15 +940,31 @@
         engineBadge.textContent = "AI Powered";
         engineBadge.className = "pill-badge badge-ai";
 
-        if (engine === "gemini") {
+        if (engine === "gemini_live") {
+          engineBadge.textContent = "Live Stream & Audio AI";
           keyLabel.textContent = "Google Gemini API Key";
-          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash";
-          modelHint.textContent = "Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.7-flash and newer models.";
+          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash";
+          modelHint.textContent = "Default: gemini-3.5-flash-lite. High-speed progressive streaming and zero-subtitle live audio transcription.";
+          const datalist = document.getElementById("modelPresets");
+          if (datalist) {
+            datalist.innerHTML = `
+              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra-Fast Live Stream)</option>
+              <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
+              <option value="gemini-3.6-flash">gemini-3.6-flash (Enhanced Multimodal Speed)</option>
+              <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
+              <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
+            `;
+          }
+        } else if (engine === "gemini") {
+          keyLabel.textContent = "Google Gemini API Key";
+          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash";
+          modelHint.textContent = "Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash and newer models.";
           const datalist = document.getElementById("modelPresets");
           if (datalist) {
             datalist.innerHTML = `
               <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra Fast)</option>
               <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
+              <option value="gemini-3.6-flash">gemini-3.6-flash (Enhanced Multimodal Speed)</option>
               <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
               <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
             `;
@@ -1258,7 +1276,7 @@
           const decoded = decodeUrlSafeBase64(parts[0]);
           if (decoded) {
             try { configData = JSON.parse(decoded); } catch (e) {}
-          } else if (/^[a-zA-Z]{2,3}$/.test(parts[0])) {
+          } else if (/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/.test(parts[0])) {
             configData = { lang: parts[0].toLowerCase() };
           }
         }
