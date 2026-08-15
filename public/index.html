@@ -2023,16 +2023,45 @@
       if (el) el.style.display = show ? "grid" : "none";
     }
 
-    // ==========================================
-    // Video URL to .SRT AI Generator
-    // ==========================================
+    let isGenerating = false;
+
+    async function fetchSubSegment({ videoUrl, apiKey, targetLang, startTime, duration, offsetMs }) {
+      const res = await fetch("/api/video-to-sub", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoUrl,
+          apiKey,
+          targetLang,
+          model: "gemini-3.5-live-translate-preview",
+          startTime,
+          duration,
+          offsetMs
+        })
+      });
+
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (e) {
+        throw new Error(res.status >= 500 ? `Gateway/Server Error (HTTP ${res.status}). Video stream may be slow or restricted.` : "Server returned an unexpected response.");
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || "Failed to process audio segment");
+      }
+
+      return data.cues || [];
+    }
+
     async function runVideoToSrt() {
+      if (isGenerating) return;
+
       const videoUrl = document.getElementById("genVideoUrlInput").value.trim();
       const apiKey = document.getElementById("genApiKeyInput").value.trim();
       const targetLang = document.getElementById("genLangSelect").value;
       const isCustom = document.querySelector('input[name="genRangeMode"]:checked')?.value === "custom";
-      const startTime = isCustom ? (document.getElementById("genStartTimeInput").value.trim() || "00:00:00") : "00:00:00";
-      const duration = isCustom ? (parseInt(document.getElementById("genDurationInput").value, 10) || 600) : "full";
 
       if (!videoUrl) {
         alert("Please enter a valid video stream or download URL.");
@@ -2050,68 +2079,107 @@
       const progressBox = document.getElementById("genProgressBox");
       const resultCard = document.getElementById("genResultCard");
 
+      isGenerating = true;
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;"></span> Generating Subtitles...`;
+      btn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;"></span> Transcribing with Gemini Live...`;
       progressBox.style.display = "block";
       resultCard.style.display = "none";
 
-      const setStep = (num, status) => {
+      const setStep = (num, status, text) => {
         const item = document.getElementById(`step${num}`);
         const icon = document.getElementById(`stepIcon${num}`);
         if (!item || !icon) return;
         item.className = `progress-step-item ${status}`;
+        if (text) item.querySelector("span:last-child").textContent = text;
         if (status === "active") icon.innerHTML = `<span class="spinner" style="display:inline-block;width:12px;height:12px;"></span>`;
         else if (status === "done") icon.textContent = "✅";
         else icon.textContent = "⏳";
       };
 
-      setStep(1, "active");
-      setStep(2, "");
-      setStep(3, "");
-      setStep(4, "");
+      setStep(1, "active", "Step 1: Connecting to stream via ffmpeg...");
+      setStep(2, "", "Step 2: Demuxing audio stream buffer...");
+      setStep(3, "", "Step 3: Google Gemini 3.5 Live AI Speech-to-Text & Live Translation...");
+      setStep(4, "", "Step 4: Assembling chronological .SRT subtitle file...");
 
-      const t1 = setTimeout(() => { setStep(1, "done"); setStep(2, "active"); }, 1500);
-      const t2 = setTimeout(() => { setStep(2, "done"); setStep(3, "active"); }, 4000);
+      activeCues = [];
+      activeTargetLang = targetLang;
 
       try {
-        const res = await fetch("/api/video-to-sub", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            videoUrl,
-            apiKey,
-            targetLang,
-            model: "gemini-3.5-live-translate-preview",
-            startTime,
-            duration
-          })
-        });
+        if (isCustom) {
+          // Custom single clip
+          const startTime = document.getElementById("genStartTimeInput").value.trim() || "00:00:00";
+          const duration = parseInt(document.getElementById("genDurationInput").value, 10) || 300;
 
-        clearTimeout(t1);
-        clearTimeout(t2);
+          setStep(1, "done");
+          setStep(2, "done");
+          setStep(3, "active", `Transcribing custom clip (${startTime}, ${duration}s)...`);
 
-        const data = await res.json();
-        if (!data.success) {
-          throw new Error(data.message || "Failed to generate subtitles");
+          const cues = await fetchSubSegment({ videoUrl, apiKey, targetLang, startTime, duration });
+          activeCues = cues;
+        } else {
+          // Progressive Full Video Processing in 3-minute chunks
+          setStep(1, "done");
+          setStep(2, "done");
+
+          const CHUNK_SECONDS = 180; // 3 minutes per chunk
+          const MAX_CHUNKS = 40;     // up to 2 hours
+          let consecutiveEmpty = 0;
+
+          for (let i = 0; i < MAX_CHUNKS; i++) {
+            const currentOffsetSec = i * CHUNK_SECONDS;
+            const startTs = msToSrtTs(currentOffsetSec * 1000).split(",")[0];
+            const offsetMs = currentOffsetSec * 1000;
+
+            const minElapsed = Math.floor(currentOffsetSec / 60);
+            setStep(3, "active", `Gemini Live Transcribing: Minute ${minElapsed}m - ${minElapsed + 3}m (${activeCues.length} Cues generated)...`);
+
+            try {
+              const segCues = await fetchSubSegment({
+                videoUrl,
+                apiKey,
+                targetLang,
+                startTime: startTs,
+                duration: CHUNK_SECONDS,
+                offsetMs
+              });
+
+              if (segCues.length === 0) {
+                consecutiveEmpty++;
+                if (consecutiveEmpty >= 2 && activeCues.length > 0) {
+                  // End of video reached
+                  break;
+                }
+              } else {
+                consecutiveEmpty = 0;
+                activeCues.push(...segCues);
+              }
+            } catch (segErr) {
+              if (activeCues.length > 0) {
+                console.warn("Segment reached end of video:", segErr.message);
+                break;
+              }
+              throw segErr;
+            }
+          }
         }
 
-        setStep(1, "done");
-        setStep(2, "done");
-        setStep(3, "done");
-        setStep(4, "done");
+        if (activeCues.length === 0) {
+          throw new Error("No spoken dialogue detected in the video stream. Please verify the URL or audio track.");
+        }
 
-        activeCues = data.cues || [];
-        activeTargetLang = targetLang;
+        setStep(3, "done", `Step 3: Transcribed ${activeCues.length} dialogue cues.`);
+        setStep(4, "done", "Step 4: Subtitles ready!");
 
         document.getElementById("genResultSummary").textContent = `Generated ${activeCues.length} Cues (${targetLang.toUpperCase()}) via Gemini 3.5 Live!`;
         resultCard.style.display = "block";
       } catch (err) {
-        alert(`Generation Error: ${err.message}`);
+        alert(`Generation Notice: ${err.message}`);
         setStep(1, "");
         setStep(2, "");
         setStep(3, "");
         setStep(4, "");
       } finally {
+        isGenerating = false;
         btn.disabled = false;
         btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Transcribe & Generate .SRT Subtitles`;
       }

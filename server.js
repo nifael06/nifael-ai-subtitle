@@ -5,7 +5,7 @@ const cors = require("cors");
 const axios = require("axios");
 const manifest = require("./manifest");
 const { searchAllSubtitles, downloadSubtitleText } = require("./providers");
-const { parseSrt, cleanCues, cuesToVtt, cuesToSrt } = require("./srtHelper");
+const { parseSrt, cleanCues, cuesToVtt, cuesToSrt, timeToMs, formatVttTimestamp, normalizeTimestamp } = require("./srtHelper");
 const { translateCues } = require("./translator");
 const { extractEmbeddedSubtitle, extractAudioChunk } = require("./embeddedExtractor");
 const { audioToSubtitleGemini, sanitizeGeminiModel } = require("./geminiStream");
@@ -641,16 +641,25 @@ app.post("/api/video-to-sub", async (req, res) => {
 
     // 2. Transcribe and Translate via Gemini 3.5 Live Multimodal AI
     const rawSrt = await audioToSubtitleGemini(audioBase64, lang, key, selectedModel);
-    if (!rawSrt || !rawSrt.trim()) {
-      return res.status(500).json({ success: false, message: "Gemini AI was unable to detect or transcribe spoken dialogue from the audio stream." });
-    }
-
+    
     // 3. Parse and clean cues
-    const parsedCues = parseSrt(rawSrt);
-    const cleanedCues = cleanCues(parsedCues);
+    const parsedCues = rawSrt ? parseSrt(rawSrt) : [];
+    let cleanedCues = cleanCues(parsedCues);
 
-    if (cleanedCues.length === 0) {
-      return res.status(500).json({ success: false, message: "No dialogue cues were generated from the video audio." });
+    // Apply offsetMs if provided (for progressive multi-segment stitching)
+    const { offsetMs } = req.body || {};
+    const baseOffset = typeof offsetMs === "number" ? offsetMs : (safeStart !== "00:00:00" ? timeToMs(safeStart) : 0);
+
+    if (baseOffset > 0 && cleanedCues.length > 0) {
+      cleanedCues = cleanedCues.map((c) => {
+        const sMs = timeToMs(c.startTime) + baseOffset;
+        const eMs = timeToMs(c.endTime) + baseOffset;
+        return {
+          ...c,
+          startTime: normalizeTimestamp(formatVttTimestamp(sMs)),
+          endTime: normalizeTimestamp(formatVttTimestamp(eMs))
+        };
+      });
     }
 
     // 4. Build standard SRT and WebVTT outputs

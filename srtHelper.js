@@ -119,6 +119,7 @@ function cleanTextContent(rawText) {
 
 /**
  * 1. Native zero-dependency, fault-tolerant SRT & WebVTT Parser
+ * Supports standard multi-line SRT, WebVTT, and inline AI bracket formats [ 00:01:00,000 --> 00:01:05,000 ] Text
  */
 function parseSrt(srtContent) {
   if (!srtContent || typeof srtContent !== "string") return [];
@@ -129,14 +130,43 @@ function parseSrt(srtContent) {
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
 
-  const blocks = normalized.trim().split(/\n\s*\n/);
   const cues = [];
+
+  // 1. First attempt: Line-by-line parsing for inline AI format [ 00:16,569 --> 00:22,349 ] Dialogue
+  const rawLines = normalized.split("\n");
+  let hasInlineFormat = false;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+    if (!line || line.startsWith("WEBVTT") || line.startsWith("NOTE")) continue;
+
+    const inlineMatch = line.match(/^\[?\s*((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})\s*-->\s*((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})\s*\]?\s*[:-]?\s*(.*)$/);
+    if (inlineMatch && inlineMatch[3] && inlineMatch[3].trim()) {
+      hasInlineFormat = true;
+      const text = cleanTextContent(inlineMatch[3].trim());
+      if (text) {
+        cues.push({
+          id: String(cues.length + 1),
+          startTime: normalizeTimestamp(inlineMatch[1]),
+          endTime: normalizeTimestamp(inlineMatch[2]),
+          text
+        });
+      }
+    }
+  }
+
+  if (hasInlineFormat && cues.length > 0) {
+    cues.sort((a, b) => timeToMs(a.startTime) - timeToMs(b.startTime));
+    return cues;
+  }
+
+  // 2. Standard multi-line block parsing
+  const blocks = normalized.trim().split(/\n\s*\n/);
 
   for (let b = 0; b < blocks.length; b++) {
     const rawBlock = blocks[b].trim();
     if (!rawBlock) continue;
 
-    // Skip WebVTT file header or metadata blocks
     if (rawBlock.startsWith("WEBVTT") || rawBlock.startsWith("NOTE") || rawBlock.startsWith("STYLE") || rawBlock.startsWith("REGION")) {
       continue;
     }
