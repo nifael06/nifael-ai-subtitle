@@ -560,6 +560,12 @@ function parseTranslatedBlock(translatedBlock, chunk) {
     .split(/<<<SEG>>>|<<<\s*SEG\s*>>>|---SEG---|---\s*SEG\s*---|\[SEG\]/i)
     .map((p) => p.trim());
 
+  // Handle LLM output edge case where response starts or ends with a delimiter
+  if (parts.length > chunk.length) {
+    if (parts[0] === "") parts.shift();
+    if (parts.length > chunk.length && parts[parts.length - 1] === "") parts.pop();
+  }
+
   // If exact match
   if (parts.length === chunk.length) {
     return chunk.map((cue, index) => ({
