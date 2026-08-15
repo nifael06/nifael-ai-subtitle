@@ -1629,8 +1629,7 @@
     let currentNonce = "";
 
     function randomizeManifestUrl() {
-      currentNonce = Math.random().toString(36).substring(2, 9);
-      updateManifestUrl();
+      updateManifestUrl(true);
       const btn = document.getElementById("randomizeBtn");
       if (btn) {
         btn.style.background = "rgba(139, 92, 246, 0.35)";
@@ -1644,76 +1643,77 @@
     }
 
     function getManifestUrl() {
-      const lang = document.getElementById("languageSelect").value;
-      const engine = document.getElementById("engineSelect").value;
-      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput").value).trim();
-      const model = document.getElementById("modelInput").value.trim();
-      const osKey = document.getElementById("osKeyInput").value.trim();
-      const subdlKey = document.getElementById("subdlKeyInput").value.trim();
-      const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
+      const lang = document.getElementById("languageSelect")?.value || "en";
+      const engine = document.getElementById("engineSelect")?.value || "google";
+      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput")?.value || "").trim();
+      const model = (document.getElementById("modelInput")?.value || "").trim();
+      const osKey = (document.getElementById("osKeyInput")?.value || "").trim();
+      const subdlKey = (document.getElementById("subdlKeyInput")?.value || "").trim();
+      const subsourceKey = (document.getElementById("subsourceKeyInput")?.value || "").trim();
 
       const geminiKey = engineKeys.gemini || engineKeys.gemini_live || "";
       const openaiKey = engineKeys.openai || "";
       const deeplKey = engineKeys.deepl || "";
 
-      // If pure default with zero custom keys and no custom nonce
-      if (engine === "google" && !activeKey && !model && !osKey && !subdlKey && !subsourceKey && !currentNonce) {
-        return `${window.location.origin}/${lang}/manifest.json`;
+      if (!currentNonce) {
+        currentNonce = Math.random().toString(36).substring(2, 9);
       }
 
       const configObj = {
         lang,
         engine,
-        apiKey: activeKey,
-        geminiKey,
-        openaiKey,
-        deeplKey,
-        model,
-        osKey,
-        subdlKey,
-        subsourceKey
+        r: currentNonce
       };
-      if (currentNonce) {
-        configObj.r = currentNonce;
-      }
+
+      if (activeKey) configObj.apiKey = activeKey;
+      if (geminiKey) configObj.geminiKey = geminiKey;
+      if (openaiKey) configObj.openaiKey = openaiKey;
+      if (deeplKey) configObj.deeplKey = deeplKey;
+      if (model) configObj.model = model;
+      if (osKey) configObj.osKey = osKey;
+      if (subdlKey) configObj.subdlKey = subdlKey;
+      if (subsourceKey) configObj.subsourceKey = subsourceKey;
+
       const configStr = encodeUrlSafeBase64(JSON.stringify(configObj));
       return `${window.location.origin}/${configStr}/manifest.json`;
     }
 
     function getShareUrl() {
-      const lang = document.getElementById("languageSelect").value;
-      const engine = document.getElementById("engineSelect").value;
-      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput").value).trim();
-      const model = document.getElementById("modelInput").value.trim();
-      const osKey = document.getElementById("osKeyInput").value.trim();
-      const subdlKey = document.getElementById("subdlKeyInput").value.trim();
-      const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
+      const lang = document.getElementById("languageSelect")?.value || "en";
+      const engine = document.getElementById("engineSelect")?.value || "google";
+      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput")?.value || "").trim();
+      const model = (document.getElementById("modelInput")?.value || "").trim();
+      const osKey = (document.getElementById("osKeyInput")?.value || "").trim();
+      const subdlKey = (document.getElementById("subdlKeyInput")?.value || "").trim();
+      const subsourceKey = (document.getElementById("subsourceKeyInput")?.value || "").trim();
 
       const geminiKey = engineKeys.gemini || engineKeys.gemini_live || "";
       const openaiKey = engineKeys.openai || "";
       const deeplKey = engineKeys.deepl || "";
 
-      if (engine === "google" && !activeKey && !model && !osKey && !subdlKey && !subsourceKey) {
-        return `${window.location.origin}/configure?lang=${encodeURIComponent(lang)}`;
-      }
-
       const configObj = {
         lang,
         engine,
-        apiKey: activeKey,
-        geminiKey,
-        openaiKey,
-        deeplKey,
-        model,
-        osKey,
-        subdlKey,
-        subsourceKey
+        r: currentNonce || Math.random().toString(36).substring(2, 9)
       };
+
+      if (activeKey) configObj.apiKey = activeKey;
+      if (geminiKey) configObj.geminiKey = geminiKey;
+      if (openaiKey) configObj.openaiKey = openaiKey;
+      if (deeplKey) configObj.deeplKey = deeplKey;
+      if (model) configObj.model = model;
+      if (osKey) configObj.osKey = osKey;
+      if (subdlKey) configObj.subdlKey = subdlKey;
+      if (subsourceKey) configObj.subsourceKey = subsourceKey;
+
       const configStr = encodeUrlSafeBase64(JSON.stringify(configObj));
       return `${window.location.origin}/${configStr}/configure`;
     }
 
-    function updateManifestUrl() {
+    function updateManifestUrl(regenerateNonce = true) {
+      if (regenerateNonce) {
+        currentNonce = Math.random().toString(36).substring(2, 9);
+      }
       document.getElementById("manifestUrlInput").value = getManifestUrl();
     }
 
