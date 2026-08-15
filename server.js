@@ -134,8 +134,10 @@ app.get(["/manifest.json", "/:config/manifest.json"], (req, res) => {
   const modelTag = (isAi && model) ? ` (${model})` : "";
   const engineDisplayName = (engine === "gemini" || engine === "gemini_live") ? "GEMINI" : engine.toUpperCase();
 
+  const idSuffix = req.params.config ? `.${engine}.${lang}` : "";
   const customManifest = {
     ...manifest,
+    id: `com.nifael.ai.subtitles${idSuffix}`,
     name: `nifael AI subtitle [${lang.toUpperCase()} - ${engineDisplayName}${modelTag}]`,
     description: `AI-powered subtitle translation (${engineDisplayName}${modelTag}) from OpenSubtitles, SubDL, and SubSource to ${lang.toUpperCase()}.`
   };

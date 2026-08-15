@@ -1242,8 +1242,12 @@
 
       <div class="form-group">
         <label for="manifestUrlInput">Manifest URL (Click to copy)</label>
-        <div class="manifest-box-wrap">
-          <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()">
+        <div class="manifest-box-wrap" style="display:flex; gap:0.4rem; align-items:center;">
+          <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()" style="flex:1;">
+          <button class="btn-copy" id="randomizeBtn" onclick="randomizeManifestUrl()" title="Generate a fresh unique randomized manifest link" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); color: #c084fc;">
+            <span>🎲</span>
+            <span>Randomize</span>
+          </button>
           <button class="btn-copy" id="copyBtn" onclick="copyManifestUrl()">
             <span id="copyIcon">📋</span>
             <span id="copyText">Copy</span>
@@ -1622,6 +1626,23 @@
       }
     }
 
+    let currentNonce = "";
+
+    function randomizeManifestUrl() {
+      currentNonce = Math.random().toString(36).substring(2, 9);
+      updateManifestUrl();
+      const btn = document.getElementById("randomizeBtn");
+      if (btn) {
+        btn.style.background = "rgba(139, 92, 246, 0.35)";
+        btn.style.borderColor = "rgba(139, 92, 246, 0.7)";
+        setTimeout(() => {
+          btn.style.background = "rgba(139, 92, 246, 0.15)";
+          btn.style.borderColor = "rgba(139, 92, 246, 0.3)";
+        }, 1000);
+      }
+      showToast("Generated new unique randomized manifest link! 🎲");
+    }
+
     function getManifestUrl() {
       const lang = document.getElementById("languageSelect").value;
       const engine = document.getElementById("engineSelect").value;
@@ -1635,8 +1656,8 @@
       const openaiKey = engineKeys.openai || "";
       const deeplKey = engineKeys.deepl || "";
 
-      // If pure default with zero custom keys
-      if (engine === "google" && !activeKey && !model && !osKey && !subdlKey && !subsourceKey) {
+      // If pure default with zero custom keys and no custom nonce
+      if (engine === "google" && !activeKey && !model && !osKey && !subdlKey && !subsourceKey && !currentNonce) {
         return `${window.location.origin}/${lang}/manifest.json`;
       }
 
@@ -1652,6 +1673,9 @@
         subdlKey,
         subsourceKey
       };
+      if (currentNonce) {
+        configObj.r = currentNonce;
+      }
       const configStr = encodeUrlSafeBase64(JSON.stringify(configObj));
       return `${window.location.origin}/${configStr}/manifest.json`;
     }
