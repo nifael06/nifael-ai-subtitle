@@ -135,13 +135,11 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
   const primaryApiModel = resolveApiModel(requestedModel);
 
   const candidateModels = [
-    primaryApiModel,
-    "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
+    "gemini-3.5-pro",
     "gemini-3.6-flash",
     "gemini-3.7-flash",
-    "gemini-3.5-pro",
-    "gemini-3.7-pro"
+    "gemini-3.5-flash-lite"
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   let lastError = null;
@@ -149,7 +147,20 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
   for (const model of candidateModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const promptText = `You are an expert audio transcriber and movie subtitle generator. Listen to the provided audio stream, transcribe all spoken dialogue accurately with precise timestamps, and translate the dialogue directly into language '${targetLang}'. Output ONLY valid SubRip (SRT) format with cue numbers and timestamps (HH:MM:SS,mmm --> HH:MM:SS,mmm). Do not add explanations, notes, or markdown backticks:`;
+      const promptText = `You are a master movie subtitle translator. Listen to the spoken voice in this audio clip, detect the speech timestamps, and translate the dialogue into natural language '${targetLang}'.
+
+Rules:
+1. Transcribe EVERY sentence or phrase spoken by characters.
+2. Ensure the timestamps match the exact voice start and end in the audio.
+3. Output strictly in standard numbered SubRip (SRT) format without markdown backticks:
+
+1
+00:00:01,000 --> 00:00:04,500
+[Translated dialogue]
+
+2
+00:00:05,000 --> 00:00:08,200
+[Translated dialogue]`;
 
       const response = await axios.post(
         url,
@@ -169,7 +180,7 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
               ]
             }
           ],
-          generationConfig: { temperature: 0.2 },
+          generationConfig: { temperature: 0.1 },
           safetySettings: SAFETY_SETTINGS
         },
         { timeout: 60000 }

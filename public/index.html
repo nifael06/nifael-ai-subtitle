@@ -1264,17 +1264,25 @@
         <div class="hint">Get your free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent-indigo)">Google AI Studio</a>.</div>
       </div>
 
-      <!-- Transcription Mode: Full Video Default -->
+      <!-- Transcription Mode & Duration Presets -->
       <div class="form-group" style="margin-top: 1rem;">
-        <label>Transcription Length</label>
-        <div style="display: flex; gap: 0.65rem; margin-top: 0.25rem;">
-          <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); padding: 0.65rem 0.85rem; border-radius: 0.65rem; cursor: pointer; color: #ffffff; font-size: 0.82rem; font-weight: 600;">
+        <label>Transcription Length / Range</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; margin-top: 0.25rem;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); padding: 0.55rem 0.65rem; border-radius: 0.6rem; cursor: pointer; color: #ffffff; font-size: 0.78rem; font-weight: 600;">
             <input type="radio" name="genRangeMode" value="full" checked onchange="toggleRangeInputs(false)">
-            <span>🌟 Full Video / Movie (Entire Length)</span>
+            <span>🌟 Full Movie</span>
           </label>
-          <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.65rem 0.85rem; border-radius: 0.65rem; cursor: pointer; color: #94a3b8; font-size: 0.82rem; font-weight: 500;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.55rem 0.65rem; border-radius: 0.6rem; cursor: pointer; color: #cbd5e1; font-size: 0.78rem; font-weight: 500;">
+            <input type="radio" name="genRangeMode" value="15min" onchange="toggleRangeInputs(false)">
+            <span>⚡ 15 Mins</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.55rem 0.65rem; border-radius: 0.6rem; cursor: pointer; color: #cbd5e1; font-size: 0.78rem; font-weight: 500;">
+            <input type="radio" name="genRangeMode" value="30min" onchange="toggleRangeInputs(false)">
+            <span>🎬 30 Mins</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.55rem 0.65rem; border-radius: 0.6rem; cursor: pointer; color: #cbd5e1; font-size: 0.78rem; font-weight: 500;">
             <input type="radio" name="genRangeMode" value="custom" onchange="toggleRangeInputs(true)">
-            <span>⏱️ Custom Clip Range</span>
+            <span>⚙️ Custom</span>
           </label>
         </div>
       </div>
@@ -1287,7 +1295,7 @@
         </div>
         <div class="form-group" style="margin-bottom: 0;">
           <label for="genDurationInput" style="font-size: 0.75rem;">Duration (Seconds)</label>
-          <input type="number" id="genDurationInput" value="600" min="10" placeholder="Full" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+          <input type="number" id="genDurationInput" value="600" min="10" placeholder="600" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
         </div>
       </div>
 
@@ -1317,6 +1325,11 @@
         <div class="progress-step-item" id="step4">
           <span id="stepIcon4">⏳</span>
           <span>Step 4: Assembling chronological .SRT subtitle file...</span>
+        </div>
+        <div style="margin-top: 0.85rem; text-align: right;">
+          <button type="button" id="btnStopGen" onclick="requestStopGeneration()" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); padding: 0.4rem 0.85rem; border-radius: 0.55rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+            <span>⏹️ Stop & Save Subtitles Now</span>
+          </button>
         </div>
       </div>
 
@@ -2055,13 +2068,24 @@
       return data.cues || [];
     }
 
+    let stopRequested = false;
+
+    function requestStopGeneration() {
+      if (!isGenerating) return;
+      stopRequested = true;
+      const btnStop = document.getElementById("btnStopGen");
+      if (btnStop) {
+        btnStop.innerHTML = `<span class="spinner" style="display:inline-block;width:12px;height:12px;margin-right:4px;"></span> Finalizing Subtitles...`;
+      }
+    }
+
     async function runVideoToSrt() {
       if (isGenerating) return;
 
       const videoUrl = document.getElementById("genVideoUrlInput").value.trim();
       const apiKey = document.getElementById("genApiKeyInput").value.trim();
       const targetLang = document.getElementById("genLangSelect").value;
-      const isCustom = document.querySelector('input[name="genRangeMode"]:checked')?.value === "custom";
+      const rangeMode = document.querySelector('input[name="genRangeMode"]:checked')?.value || "full";
 
       if (!videoUrl) {
         alert("Please enter a valid video stream or download URL.");
@@ -2078,8 +2102,15 @@
       const btn = document.getElementById("btnRunGenerator");
       const progressBox = document.getElementById("genProgressBox");
       const resultCard = document.getElementById("genResultCard");
+      const btnStop = document.getElementById("btnStopGen");
 
       isGenerating = true;
+      stopRequested = false;
+      if (btnStop) {
+        btnStop.innerHTML = `<span>⏹️ Stop & Save Subtitles Now</span>`;
+        btnStop.disabled = false;
+      }
+
       btn.disabled = true;
       btn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;"></span> Transcribing with Gemini Live...`;
       progressBox.style.display = "block";
@@ -2105,27 +2136,33 @@
       activeTargetLang = targetLang;
 
       try {
-        if (isCustom) {
+        setStep(1, "done");
+        setStep(2, "done");
+
+        if (rangeMode === "custom") {
           // Custom single clip
           const startTime = document.getElementById("genStartTimeInput").value.trim() || "00:00:00";
           const duration = parseInt(document.getElementById("genDurationInput").value, 10) || 300;
 
-          setStep(1, "done");
-          setStep(2, "done");
           setStep(3, "active", `Transcribing custom clip (${startTime}, ${duration}s)...`);
-
           const cues = await fetchSubSegment({ videoUrl, apiKey, targetLang, startTime, duration });
           activeCues = cues;
         } else {
-          // Progressive Full Video Processing in 90-second chunks (fast & responsive)
-          setStep(1, "done");
-          setStep(2, "done");
+          // Progressive Multi-segment Processing
+          let targetTotalSec = 7200; // 2 hours default for full movie
+          if (rangeMode === "15min") targetTotalSec = 900;
+          else if (rangeMode === "30min") targetTotalSec = 1800;
 
-          const CHUNK_SECONDS = 90; // 1.5 minutes per chunk (~3s processing time)
-          const MAX_CHUNKS = 80;    // up to 2 hours
+          const CHUNK_SECONDS = 90; // 1.5 minutes per chunk
+          const maxChunks = Math.ceil(targetTotalSec / CHUNK_SECONDS);
           let consecutiveEmpty = 0;
 
-          for (let i = 0; i < MAX_CHUNKS; i++) {
+          for (let i = 0; i < maxChunks; i++) {
+            if (stopRequested) {
+              console.log("Stop requested by user. Finalizing generated cues...");
+              break;
+            }
+
             const currentOffsetSec = i * CHUNK_SECONDS;
             const startTs = msToSrtTs(currentOffsetSec * 1000).split(",")[0];
             const offsetMs = currentOffsetSec * 1000;
@@ -2145,8 +2182,8 @@
 
               if (segCues.length === 0) {
                 consecutiveEmpty++;
-                if (consecutiveEmpty >= 2 && activeCues.length > 0) {
-                  // End of video reached
+                if (consecutiveEmpty >= 8 && activeCues.length > 0) {
+                  // 12 minutes of consecutive silence / end of video stream
                   break;
                 }
               } else {
