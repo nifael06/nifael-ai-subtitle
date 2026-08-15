@@ -835,6 +835,86 @@
       border-color: rgba(56, 189, 248, 0.25);
       color: #38bdf8;
     }
+
+    /* Real-Time Live Generation Console */
+    .live-stream-window {
+      background: rgba(10, 15, 30, 0.92);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 0.85rem;
+      padding: 0.85rem 1rem;
+      margin-top: 1rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .live-stream-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.65rem;
+    }
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #34d399;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #34d399;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #34d399;
+      animation: pulse-dot 1.5s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .live-feed-box {
+      max-height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      padding-right: 0.35rem;
+    }
+    .live-cue-entry {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 3px solid var(--accent-indigo);
+      border-radius: 0.5rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.82rem;
+      transition: all 0.2s ease;
+      animation: fadeInEntry 0.3s ease-out;
+    }
+    @keyframes fadeInEntry {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .live-cue-ts {
+      font-size: 0.72rem;
+      font-family: monospace;
+      color: #38bdf8;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+    .live-cue-orig {
+      color: #94a3b8;
+      font-size: 0.76rem;
+      margin-bottom: 0.2rem;
+      font-style: italic;
+    }
+    .live-cue-trans {
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.82rem;
+    }
   </style>
 </head>
 <body>
@@ -1332,6 +1412,22 @@
         </div>
       </div>
 
+      <!-- Real-Time Live Generation Console Window -->
+      <div id="genLiveConsole" class="live-stream-window" style="display:none;">
+        <div class="live-stream-header">
+          <div class="live-indicator">
+            <span class="live-dot"></span>
+            <span>Live Speech-to-Text & Subtitle Stream</span>
+          </div>
+          <div id="liveFeedStats" style="font-size: 0.76rem; color: #94a3b8; font-weight: 500;">
+            0 Cues Transcribed
+          </div>
+        </div>
+        <div id="liveFeedBox" class="live-feed-box">
+          <!-- Real-time incoming cues stream live here -->
+        </div>
+      </div>
+
       <!-- Generator Result Box -->
       <div id="genResultCard" style="display:none; margin-top: 1.25rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.75rem; padding: 1rem;">
         <div style="display:flex; align-items:center; gap:0.5rem; color:#34d399; font-weight:600; font-size:0.9rem; margin-bottom:0.75rem;">
@@ -1366,8 +1462,9 @@
           <span>📂 Upload .SRT</span>
           <input type="file" id="srtFileInput" accept=".srt,.vtt,.txt" style="display:none;" onchange="handleFileUpload(event)">
         </label>
-        <button class="btn-primary" style="width:auto;" onclick="downloadCurrentSrt()">📥 Save .SRT</button>
-        <button class="btn-secondary" style="width:auto;" onclick="downloadCurrentVtt()">📥 Save .VTT</button>
+        <button class="btn-primary" style="width:auto;" onclick="downloadCurrentSrt()">📥 Save Translated .SRT</button>
+        <button class="btn-secondary" style="width:auto;" onclick="downloadBilingualSrt()">🌟 Dual / Bilingual .SRT</button>
+        <button class="btn-secondary" style="width:auto;" onclick="downloadOriginalSrt()">🗣️ Original .SRT</button>
         <button class="btn-secondary" style="width:auto;" onclick="addNewCue()">➕ Add Cue</button>
         <button class="btn-secondary" style="width:auto;" onclick="copySrtToClipboard()">📋 Copy</button>
         <button class="btn-icon-danger" style="width:auto; margin-left:auto;" onclick="clearAllCues()">🗑️ Clear</button>
@@ -2097,9 +2194,21 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;"></span> Transcribing with Gemini Live...`;
+      btn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;margin-right:6px;"></span> Transcribing with Gemini 3.5 AI...`;
       progressBox.style.display = "block";
       resultCard.style.display = "none";
+
+      const liveConsole = document.getElementById("genLiveConsole");
+      const liveFeedBox = document.getElementById("liveFeedBox");
+      const liveFeedStats = document.getElementById("liveFeedStats");
+      if (liveConsole) liveConsole.style.display = "block";
+      if (liveFeedBox) {
+        liveFeedBox.innerHTML = `
+          <div style="color:#64748b; font-size:0.78rem; text-align:center; padding:1.2rem 0;">
+            Connecting to stream... Spoken dialogue and translations will stream here in real time.
+          </div>
+        `;
+      }
 
       const setStep = (num, status, text) => {
         const item = document.getElementById(`step${num}`);
@@ -2114,7 +2223,7 @@
 
       setStep(1, "active", "Step 1: Connecting to stream via ffmpeg...");
       setStep(2, "", "Step 2: Demuxing audio stream buffer...");
-      setStep(3, "", "Step 3: Google Gemini 3.5 Live AI Speech-to-Text & Live Translation...");
+      setStep(3, "", "Step 3: Gemini 3.5 Native Audio Speech-to-Text & Live Translation...");
       setStep(4, "", "Step 4: Assembling chronological .SRT subtitle file...");
 
       activeCues = [];
@@ -2132,8 +2241,23 @@
           setStep(3, "active", `Transcribing custom clip (${startTime}, ${duration}s)...`);
           const cues = await fetchSubSegment({ videoUrl, apiKey, targetLang, startTime, duration });
           activeCues = cues;
+
+          if (liveFeedBox && cues.length > 0) {
+            liveFeedBox.innerHTML = "";
+            cues.forEach(cue => {
+              const entry = document.createElement("div");
+              entry.className = "live-cue-entry";
+              entry.innerHTML = `
+                <div class="live-cue-ts">⏱️ ${cue.startTime} ➔ ${cue.endTime}</div>
+                ${cue.originalText && cue.originalText !== cue.text ? `<div class="live-cue-orig">🗣️ <em>${escapeHtml(cue.originalText)}</em></div>` : ''}
+                <div class="live-cue-trans">🌐 ${escapeHtml(cue.text)}</div>
+              `;
+              liveFeedBox.appendChild(entry);
+            });
+            if (liveFeedStats) liveFeedStats.textContent = `${cues.length} Cues Transcribed`;
+          }
         } else {
-          // Progressive Multi-segment Processing with 3x Turbo Parallel Concurrency
+          // Progressive Multi-segment Processing
           let targetTotalSec = 7200; // 2 hours default for full movie
           if (rangeMode === "15min") targetTotalSec = 900;
           else if (rangeMode === "30min") targetTotalSec = 1800;
@@ -2180,6 +2304,23 @@
               completedChunks++;
               totalCuesFound += (segCues ? segCues.length : 0);
 
+              // Render incoming cues live into Live Generation Console
+              if (segCues && segCues.length > 0 && liveFeedBox) {
+                if (completedChunks === 1) liveFeedBox.innerHTML = "";
+                segCues.forEach(cue => {
+                  const entry = document.createElement("div");
+                  entry.className = "live-cue-entry";
+                  entry.innerHTML = `
+                    <div class="live-cue-ts">⏱️ ${cue.startTime} ➔ ${cue.endTime}</div>
+                    ${cue.originalText && cue.originalText !== cue.text ? `<div class="live-cue-orig">🗣️ <em>${escapeHtml(cue.originalText)}</em></div>` : ''}
+                    <div class="live-cue-trans">🌐 ${escapeHtml(cue.text)}</div>
+                  `;
+                  liveFeedBox.appendChild(entry);
+                });
+                liveFeedBox.scrollTop = liveFeedBox.scrollHeight;
+                if (liveFeedStats) liveFeedStats.textContent = `${totalCuesFound} Cues Transcribed`;
+              }
+
               const percent = Math.round((completedChunks / maxChunks) * 100);
               const minDone = (completedChunks * 1.5).toFixed(1);
               setStep(3, "active", `Gemini 3.5 AI: ${completedChunks}/${maxChunks} slices (~${minDone}m | ${totalCuesFound} Cues generated)...`);
@@ -2197,7 +2338,6 @@
           // Assemble, flatten, and chronologically sort all cues
           activeCues = chunkResults.filter(Boolean).flat();
           activeCues.sort((a, b) => parseTsToMs(a.startTime) - parseTsToMs(b.startTime));
-          // Re-index cues cleanly
           activeCues.forEach((c, idx) => { c.id = String(idx + 1); });
         }
 
@@ -2208,7 +2348,7 @@
         setStep(3, "done", `Step 3: Transcribed ${activeCues.length} dialogue cues.`);
         setStep(4, "done", "Step 4: Subtitles ready!");
 
-        document.getElementById("genResultSummary").textContent = `Generated ${activeCues.length} Cues (${targetLang.toUpperCase()}) via Gemini 3.5 Live!`;
+        document.getElementById("genResultSummary").textContent = `Generated ${activeCues.length} Cues (${targetLang.toUpperCase()}) via Gemini 3.5 AI!`;
         resultCard.style.display = "block";
       } catch (err) {
         alert(`Generation Notice: ${err.message}`);
@@ -2228,7 +2368,7 @@
     }
 
     // ==========================================
-    // Subtitle Studio & Cue Editor
+    // Subtitle Studio & Cue Editor (Bilingual)
     // ==========================================
     function renderCues() {
       const container = document.getElementById("cueListContainer");
@@ -2252,6 +2392,7 @@
         const start = cue.startTime || "00:00:00,000";
         const end = cue.endTime || "00:00:03,000";
         const text = cue.text || "";
+        const originalText = cue.originalText || "";
 
         html += `
           <div class="cue-card" id="cueCard_${idx}">
@@ -2267,12 +2408,112 @@
                 <button class="btn-icon-danger" title="Delete cue" onclick="deleteCue(${idx})">🗑️</button>
               </div>
             </div>
+            ${originalText && originalText !== text ? `
+              <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:0.35rem; font-style:italic; background:rgba(255,255,255,0.03); padding:0.25rem 0.55rem; border-radius:0.35rem; border-left: 2px solid #6366f1;">
+                🗣️ Spoken: ${escapeHtml(originalText)}
+              </div>
+            ` : ''}
             <textarea class="cue-textarea" rows="2" oninput="updateCueText(${idx}, this.value)">${escapeHtml(text)}</textarea>
           </div>
         `;
       });
 
       container.innerHTML = html;
+    }
+
+    function buildSrtString() {
+      let srt = "";
+      activeCues.forEach((cue, idx) => {
+        const id = String(idx + 1);
+        const start = cue.startTime || "00:00:00,000";
+        const end = cue.endTime || "00:00:00,000";
+        const text = cue.text || "";
+        srt += `${id}\n${start} --> ${end}\n${text}\n\n`;
+      });
+      return srt.trim() + "\n";
+    }
+
+    function buildOriginalSrtString() {
+      let srt = "";
+      activeCues.forEach((cue, idx) => {
+        const id = String(idx + 1);
+        const start = cue.startTime || "00:00:00,000";
+        const end = cue.endTime || "00:00:00,000";
+        const text = cue.originalText || cue.text || "";
+        srt += `${id}\n${start} --> ${end}\n${text}\n\n`;
+      });
+      return srt.trim() + "\n";
+    }
+
+    function buildBilingualSrtString() {
+      let srt = "";
+      activeCues.forEach((cue, idx) => {
+        const id = String(idx + 1);
+        const start = cue.startTime || "00:00:00,000";
+        const end = cue.endTime || "00:00:00,000";
+        const trans = cue.text || "";
+        const orig = cue.originalText || "";
+        const combined = (orig && orig !== trans) ? `${trans}\n${orig}` : trans;
+        srt += `${id}\n${start} --> ${end}\n${combined}\n\n`;
+      });
+      return srt.trim() + "\n";
+    }
+
+    function buildVttString() {
+      let vtt = "WEBVTT\n\n";
+      activeCues.forEach((cue, idx) => {
+        const id = String(idx + 1);
+        const start = msToVttTs(parseTsToMs(cue.startTime));
+        const end = msToVttTs(parseTsToMs(cue.endTime));
+        const text = cue.text || "";
+        vtt += `${id}\n${start} --> ${end}\n${text}\n\n`;
+      });
+      return vtt;
+    }
+
+    function downloadCurrentSrt() {
+      if (activeCues.length === 0) {
+        alert("No subtitle cues to download.");
+        return;
+      }
+      const srt = buildSrtString();
+      const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `subtitle_${activeTargetLang || "translated"}.srt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadOriginalSrt() {
+      if (activeCues.length === 0) {
+        alert("No subtitle cues to download.");
+        return;
+      }
+      const srt = buildOriginalSrtString();
+      const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `original_transcript.srt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadBilingualSrt() {
+      if (activeCues.length === 0) {
+        alert("No subtitle cues to download.");
+        return;
+      }
+      const srt = buildBilingualSrtString();
+      const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bilingual_${activeTargetLang || "translated"}.srt`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     function escapeHtml(text) {
