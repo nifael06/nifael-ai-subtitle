@@ -34,7 +34,7 @@ function getPublicProtocol(req) {
   return req.secure || req.protocol === "https" ? "https" : "http";
 }
 
-// Helper to decode Base64 / URL-safe Base64 safely
+// Helper to decode Base64 / URL-safe Base64 / Scrambled dynamic config tokens safely
 function safeBase64Decode(str) {
   if (!str || typeof str !== "string") return null;
   try {
@@ -42,7 +42,30 @@ function safeBase64Decode(str) {
     while (normalized.length % 4 !== 0) {
       normalized += "=";
     }
-    return Buffer.from(normalized, "base64").toString("utf-8");
+
+    // 1. Check if plain Base64 JSON
+    const plainUtf8 = Buffer.from(normalized, "base64").toString("utf-8");
+    if (plainUtf8.trim().startsWith("{") && plainUtf8.trim().endsWith("}")) {
+      return plainUtf8;
+    }
+
+    // 2. Unscramble dynamic avalanche-randomized token
+    const binary = Buffer.from(normalized, "base64").toString("binary");
+    if (binary.length < 2) return null;
+    const salt = binary.charCodeAt(0);
+    let prev = salt;
+    let decodedBinary = "";
+    for (let i = 1; i < binary.length; i++) {
+      const enc = binary.charCodeAt(i);
+      const orig = (enc ^ prev ^ (((i - 1) * 37 + salt) & 0xff));
+      decodedBinary += String.fromCharCode(orig);
+      prev = enc;
+    }
+    const result = Buffer.from(decodedBinary, "binary").toString("utf-8");
+    if (result.trim().startsWith("{") && result.trim().endsWith("}")) {
+      return result;
+    }
+    return plainUtf8;
   } catch (e) {
     return null;
   }
