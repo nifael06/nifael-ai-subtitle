@@ -127,6 +127,89 @@ app.get(["/manifest.json", "/:config/manifest.json"], (req, res) => {
   res.json(customManifest);
 });
 
+// ISO 639-1 (2-letter) to ISO 639-2 (3-letter) mapping for Stremio player compatibility
+const ISO_639_MAP = {
+  ms: "may", // Malay
+  id: "ind", // Indonesian
+  en: "eng", // English
+  es: "spa", // Spanish
+  fr: "fre", // French
+  de: "ger", // German
+  it: "ita", // Italian
+  pt: "por", // Portuguese
+  ru: "rus", // Russian
+  ar: "ara", // Arabic
+  ja: "jpn", // Japanese
+  ko: "kor", // Korean
+  zh: "chi", // Chinese
+  hi: "hin", // Hindi
+  th: "tha", // Thai
+  vi: "vie", // Vietnamese
+  tr: "tur", // Turkish
+  pl: "pol", // Polish
+  nl: "dut", // Dutch
+  sv: "swe", // Swedish
+  da: "dan", // Danish
+  fi: "fin", // Finnish
+  no: "nor", // Norwegian
+  cs: "cze", // Czech
+  el: "gre", // Greek
+  he: "heb", // Hebrew
+  ro: "rum", // Romanian
+  hu: "hun", // Hungarian
+  bg: "bul", // Bulgarian
+  uk: "ukr", // Ukrainian
+  fa: "per", // Persian
+  ur: "urd", // Urdu
+  bn: "ben", // Bengali
+  ta: "tam", // Tamil
+  te: "tel", // Telugu
+  mr: "mar", // Marathi
+  gu: "guj", // Gujarati
+  kn: "kan", // Kannada
+  ml: "mal", // Malayalam
+  pa: "pan", // Punjabi
+  tl: "tgl", // Tagalog
+  fil: "fil", // Filipino
+  sq: "alb", // Albanian
+  hr: "hrv", // Croatian
+  sr: "srp", // Serbian
+  sk: "slo", // Slovak
+  sl: "slv", // Slovenian
+  et: "est", // Estonian
+  lv: "lav", // Latvian
+  lt: "lit", // Lithuanian
+  ka: "geo", // Georgian
+  hy: "arm", // Armenian
+  az: "aze", // Azerbaijani
+  kk: "kaz", // Kazakh
+  uz: "uzb", // Uzbek
+  mn: "mon", // Mongolian
+  my: "bur", // Burmese
+  km: "khm", // Khmer
+  lo: "lao", // Lao
+  ne: "nep", // Nepali
+  si: "sin", // Sinhala
+  sw: "swa", // Swahili
+  af: "afr", // Afrikaans
+  is: "ice", // Icelandic
+  ga: "gle", // Irish
+  cy: "wel", // Welsh
+  eu: "baq", // Basque
+  ca: "cat", // Catalan
+  gl: "glg", // Galician
+  bs: "bos", // Bosnian
+  mk: "mac", // Macedonian
+  mt: "mlt"  // Maltese
+};
+
+function mapToStremioLang(code) {
+  if (!code || typeof code !== "string") return "eng";
+  const clean = code.trim().toLowerCase().split("-")[0];
+  if (clean.length === 3) return clean;
+  return ISO_639_MAP[clean] || clean;
+}
+
 // 3. Subtitles Discovery Endpoint
 // =========================================================================================
 // STREMIO SUBTITLE ADDON PROTOCOL CONSTRAINTS (Embedded vs External Subtitles):
@@ -166,18 +249,26 @@ app.get(["/subtitles/:type/:id.json", "/:config/subtitles/:type/:id.json"], asyn
       }
     }
 
+    const stremioLang = mapToStremioLang(lang);
+    const engineTag = engine === "gemini_live"
+      ? "GEMINI LIVE ⚡"
+      : (model ? `${engine.toUpperCase()}:${model}` : engine.toUpperCase());
+
     const stremioSubtitles = uniqueSubs.map((sub, idx) => {
       let renderUrl = `${protocol}://${host}/api/render-sub?targetLang=${lang}&engine=${engine}&subUrl=${encodeURIComponent(sub.downloadUrl)}`;
       if (apiKey) renderUrl += `&apiKey=${encodeURIComponent(apiKey)}`;
       if (model) renderUrl += `&model=${encodeURIComponent(model)}`;
 
-      const engineLabel = model ? `${engine.toUpperCase()}:${model}` : engine.toUpperCase();
+      const displaySource = sub.source || "Sub";
+      const fromLang = (sub.lang || "EN").toUpperCase();
+      const toLang = lang.toUpperCase();
+      const fileNameSnippet = (sub.fileName || "Subtitle").substring(0, 35);
 
       return {
         id: `nifael_${sub.source ? sub.source.toLowerCase() : "sub"}_${idx}`,
         url: renderUrl,
-        lang: lang,
-        label: `[nifael AI: ${engineLabel}] ${sub.source} (${(sub.lang || "EN").toUpperCase()} ➔ ${lang.toUpperCase()}) - ${(sub.fileName || "Subtitle").substring(0, 50)}`
+        lang: stremioLang,
+        label: `[nifael AI: ${engineTag}] ${displaySource} (${fromLang} ➔ ${toLang}) - ${fileNameSnippet}`
       };
     });
 
