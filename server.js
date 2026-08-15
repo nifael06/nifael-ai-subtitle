@@ -828,6 +828,11 @@ const server = app.listen(PORT, () => {
   console.log(`=============================================`);
 });
 
+server.requestTimeout = 300000;
+server.timeout = 300000;
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
+
 // Graceful shutdown handling
 function gracefulShutdown(signal) {
   console.log(`[nifael AI] Received ${signal}, flushing cache and shutting down gracefully...`);

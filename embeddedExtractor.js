@@ -42,7 +42,12 @@ function extractAudioChunk(videoStreamUrl, startTime = "00:00:00", duration = nu
     const safeStart = typeof startTime === "string" && startTime.trim() ? startTime.trim() : "00:00:00";
     const args = [
       "-hide_banner",
-      "-loglevel", "error"
+      "-loglevel", "error",
+      "-user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      "-reconnect", "1",
+      "-reconnect_at_eof", "1",
+      "-reconnect_streamed", "1",
+      "-reconnect_delay_max", "2"
     ];
 
     if (safeStart !== "00:00:00") {
@@ -64,7 +69,7 @@ function extractAudioChunk(videoStreamUrl, startTime = "00:00:00", duration = nu
       "-"
     );
 
-    execFile("ffmpeg", args, { encoding: "buffer", maxBuffer: 1024 * 1024 * 150, timeout: 300000 }, (error, stdout) => {
+    execFile("ffmpeg", args, { encoding: "buffer", maxBuffer: 1024 * 1024 * 150, timeout: 60000 }, (error, stdout) => {
       if (error || !stdout || stdout.length === 0) {
         if (error) console.warn("[nifael AI] extractAudioChunk error:", error.message);
         return resolve(null);

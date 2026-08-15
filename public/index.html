@@ -2117,12 +2117,12 @@
           const cues = await fetchSubSegment({ videoUrl, apiKey, targetLang, startTime, duration });
           activeCues = cues;
         } else {
-          // Progressive Full Video Processing in 3-minute chunks
+          // Progressive Full Video Processing in 90-second chunks (fast & responsive)
           setStep(1, "done");
           setStep(2, "done");
 
-          const CHUNK_SECONDS = 180; // 3 minutes per chunk
-          const MAX_CHUNKS = 40;     // up to 2 hours
+          const CHUNK_SECONDS = 90; // 1.5 minutes per chunk (~3s processing time)
+          const MAX_CHUNKS = 80;    // up to 2 hours
           let consecutiveEmpty = 0;
 
           for (let i = 0; i < MAX_CHUNKS; i++) {
@@ -2130,8 +2130,8 @@
             const startTs = msToSrtTs(currentOffsetSec * 1000).split(",")[0];
             const offsetMs = currentOffsetSec * 1000;
 
-            const minElapsed = Math.floor(currentOffsetSec / 60);
-            setStep(3, "active", `Gemini Live Transcribing: Minute ${minElapsed}m - ${minElapsed + 3}m (${activeCues.length} Cues generated)...`);
+            const minElapsed = (currentOffsetSec / 60).toFixed(1);
+            setStep(3, "active", `Gemini Live Transcribing: Min ${minElapsed}m (${activeCues.length} Cues generated)...`);
 
             try {
               const segCues = await fetchSubSegment({
@@ -2155,7 +2155,7 @@
               }
             } catch (segErr) {
               if (activeCues.length > 0) {
-                console.warn("Segment reached end of video:", segErr.message);
+                console.warn("Segment reached end of video stream:", segErr.message);
                 break;
               }
               throw segErr;
