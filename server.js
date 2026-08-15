@@ -618,7 +618,8 @@ app.post("/api/verify-key", async (req, res) => {
             { timeout: 8000 }
           );
           if (response.data && response.data.candidates) {
-            return res.json({ success: true, message: `Valid & Working (${curModel})` });
+            const confirmedModel = (provider === "gemini_live" || provider === "gemini") ? (requestedModel || "gemini-3.5-live-translate-preview") : curModel;
+            return res.json({ success: true, message: `Valid & Working (${confirmedModel})` });
           }
         } catch (gemErr) {
           lastErr = gemErr;

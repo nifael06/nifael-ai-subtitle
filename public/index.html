@@ -1209,6 +1209,9 @@
         provider = document.getElementById("engineSelect").value;
         apiKey = document.getElementById("apiKeyInput").value.trim();
         model = document.getElementById("modelInput").value.trim();
+        if (!model && (provider === "gemini_live" || provider === "gemini")) {
+          model = "gemini-3.5-live-translate-preview";
+        }
         badgeId = "aiKeyBadge";
         btnId = "testAiKeyBtn";
       } else if (providerType === "opensubtitles") {
