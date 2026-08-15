@@ -262,26 +262,21 @@ class QuotaExceededError extends Error {
   }
 }
 
-// Active Google Gemini models in order of priority (Gemini 3.5 Live Translate and newer)
+// Active Google Gemini models in order of priority
 const GEMINI_ACTIVE_MODELS = [
-  "gemini-3.5-live-translate",
-  "gemini-3.5-flash-lite",
-  "gemini-3.5-flash",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-3.5-pro",
-  "gemini-3.7-pro"
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-2.5-pro"
 ];
 
+let cachedGeminiWorkingModel = null;
+
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return "gemini-3.5-live-translate";
-  const trimmed = customModel.trim();
-  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-live-translate
-  if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate'.`);
-    return "gemini-3.5-live-translate";
-  }
-  return trimmed;
+  if (!customModel || typeof customModel !== "string") return cachedGeminiWorkingModel || "gemini-2.5-flash";
+  return customModel.trim();
 }
 
 /**
@@ -291,10 +286,21 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel, m
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) return await translateWithGoogle(textBatch, targetLang);
 
-  let model = sanitizeGeminiModel(customModel);
-  let fallbackIndex = 0;
-  const backoffDelays = [500, 1000, 2000];
+  const requestedModel = (customModel && typeof customModel === "string" && customModel.trim()) ? customModel.trim() : null;
+  const initialModel = requestedModel || cachedGeminiWorkingModel || "gemini-2.5-flash";
 
+  const candidateModels = [
+    initialModel,
+    ...(requestedModel ? [requestedModel] : []),
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-2.5-pro"
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+  const backoffDelays = [500, 1000, 2000];
   const safetySettings = [
     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
     { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -303,77 +309,79 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel, m
     { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
   ];
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const prompt = `You are a professional movie subtitle translator. Translate the following subtitle batch into language code '${targetLang}'. Keep the exact same '<<<SEG>>>' separators untouched between subtitle lines. Do not add any conversational text, explanations, or markdown formatting, output ONLY the translated lines:\n\n${textBatch}`;
+  let lastError = null;
 
-      const response = await axios.post(
-        url,
-        {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2 },
-          safetySettings
-        },
-        { timeout: 25000 }
-      );
+  for (const model of candidateModels) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const prompt = `You are a professional movie subtitle translator. Translate the following subtitle batch into language code '${targetLang}'. Keep the exact same '<<<SEG>>>' separators untouched between subtitle lines. Do not add any conversational text, explanations, or markdown formatting, output ONLY the translated lines:\n\n${textBatch}`;
 
-      const result = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (result && typeof result === "string" && result.trim()) {
-        return result;
-      }
-      return textBatch;
-    } catch (error) {
-      const status = error.response?.status;
-      const errorMsg = error.response?.data?.error?.message || error.message || "";
-      const errorStatus = error.response?.data?.error?.status || "";
+        const response = await axios.post(
+          url,
+          {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2 },
+            safetySettings
+          },
+          { timeout: 25000 }
+        );
 
-      // 1. Detect Model Deprecation / Not Found / No longer available
-      const isModelUnavailable =
-        status === 404 ||
-        (status === 400 && (
-          errorMsg.toLowerCase().includes("no longer available") ||
-          errorMsg.toLowerCase().includes("not found") ||
-          errorMsg.toLowerCase().includes("deprecated") ||
-          errorMsg.toLowerCase().includes("not supported") ||
-          errorMsg.toLowerCase().includes("models/")
-        ));
+        const result = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (result && typeof result === "string" && result.trim()) {
+          cachedGeminiWorkingModel = model;
+          return result;
+        }
+        return textBatch;
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        const errorMsg = error.response?.data?.error?.message || error.message || "";
+        const errorStatus = error.response?.data?.error?.status || "";
 
-      if (isModelUnavailable && fallbackIndex < GEMINI_ACTIVE_MODELS.length) {
-        const nextModel = GEMINI_ACTIVE_MODELS[fallbackIndex++];
-        if (nextModel !== model) {
-          console.warn(`[Gemini AI] Model '${model}' is unavailable (${errorMsg || status}), auto-switching to active model '${nextModel}'...`);
-          model = nextModel;
+        // 1. Detect Model Deprecation / Not Found / No longer available
+        const isModelUnavailable =
+          status === 404 ||
+          (status === 400 && (
+            errorMsg.toLowerCase().includes("no longer available") ||
+            errorMsg.toLowerCase().includes("not found") ||
+            errorMsg.toLowerCase().includes("deprecated") ||
+            errorMsg.toLowerCase().includes("not supported") ||
+            errorMsg.toLowerCase().includes("models/")
+          ));
+
+        if (isModelUnavailable) {
+          console.warn(`[Gemini AI] Model '${model}' returned 404/not-found. Trying next active model in cascade...`);
+          break; // Break inner loop to try next model in candidateModels
+        }
+
+        // 2. Quota / Resource Exhausted
+        const isRateLimitOrExhausted =
+          status === 429 ||
+          errorStatus === "RESOURCE_EXHAUSTED" ||
+          errorMsg.toLowerCase().includes("quota") ||
+          errorMsg.toLowerCase().includes("rate limit") ||
+          errorMsg.toLowerCase().includes("resource exhausted");
+
+        if (isRateLimitOrExhausted && attempt < maxRetries) {
+          const delay = backoffDelays[attempt] || 1500;
+          console.warn(`[Gemini AI] Quota/Rate-limit hit, retrying in ${delay}ms...`);
+          await sleep(delay);
           continue;
         }
+
+        if (isRateLimitOrExhausted) {
+          console.error(`[Gemini AI] Quota exceeded: ${errorMsg}`);
+          throw new QuotaExceededError("Gemini", errorMsg);
+        }
+
+        throw error;
       }
-
-      // 2. Quota / Resource Exhausted
-      const isRateLimitOrExhausted =
-        status === 429 ||
-        errorStatus === "RESOURCE_EXHAUSTED" ||
-        errorMsg.toLowerCase().includes("quota") ||
-        errorMsg.toLowerCase().includes("rate limit") ||
-        errorMsg.toLowerCase().includes("resource exhausted");
-
-      if (isRateLimitOrExhausted && attempt < maxRetries) {
-        const delay = backoffDelays[attempt] || 1500;
-        console.warn(`[Gemini AI] Quota/Rate-limit hit, retrying in ${delay}ms...`);
-        await sleep(delay);
-        continue;
-      }
-
-      if (isRateLimitOrExhausted) {
-        console.error(`[Gemini AI] Quota exceeded: ${errorMsg}`);
-        throw new QuotaExceededError("Gemini", errorMsg);
-      }
-
-      console.error("[Gemini AI error]:", errorMsg);
-      return await translateWithGoogle(textBatch, targetLang);
     }
   }
 
-  return await translateWithGoogle(textBatch, targetLang);
+  if (lastError) throw lastError;
+  return textBatch;
 }
 
 /**

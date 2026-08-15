@@ -1,14 +1,13 @@
 const axios = require("axios");
 
-// Only Gemini 3.5 Live Translate and newer models
+// Fallback cascade for active Google Gemini models
 const GEMINI_LIVE_MODELS = [
-  "gemini-3.5-live-translate",
-  "gemini-3.5-flash-lite",
-  "gemini-3.5-flash",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-3.5-pro",
-  "gemini-3.7-pro"
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-2.5-pro"
 ];
 
 const SAFETY_SETTINGS = [
@@ -19,22 +18,18 @@ const SAFETY_SETTINGS = [
   { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
 ];
 
+let cachedWorkingModel = null;
+
 /**
- * Filter and sanitize model name to ensure only Gemini 3.5+ models are used
+ * Filter and sanitize model name to ensure valid format
  */
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return "gemini-3.5-live-translate";
-  const trimmed = customModel.trim();
-  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to gemini-3.5-live-translate
-  if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate'.`);
-    return "gemini-3.5-live-translate";
-  }
-  return trimmed;
+  if (!customModel || typeof customModel !== "string") return cachedWorkingModel || "gemini-2.5-flash";
+  return customModel.trim();
 }
 
 /**
- * 1. Ultra-fast progressive Gemini translation engine
+ * 1. Ultra-fast progressive Gemini translation engine with multi-model fallback cascade
  */
 async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = "") {
   const key = apiKey || process.env.GEMINI_API_KEY;
@@ -42,10 +37,24 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
     throw new Error("Gemini API key is required for Gemini Live Stream");
   }
 
-  let model = sanitizeGeminiModel(modelName);
-  let fallbackIndex = 0;
+  const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? modelName.trim() : null;
+  const initialModel = requestedModel || cachedWorkingModel || "gemini-2.5-flash";
 
-  for (let attempt = 0; attempt <= 2; attempt++) {
+  // Build list of models to try in sequence: requested model first, then the cascade
+  const candidateModels = [
+    initialModel,
+    ...(requestedModel ? [requestedModel] : []),
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-2.5-pro"
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+  let lastError = null;
+
+  for (const model of candidateModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
       const prompt = `You are a real-time ultra-fast subtitle translation engine. Translate the following subtitle batch into language '${targetLang}'. Keep all '<<<SEG>>>' and '---SEG---' delimiters verbatim between subtitle lines. Return ONLY the translated subtitle lines:\n\n${textBatch}`;
@@ -62,14 +71,15 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
 
       const result = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (result && typeof result === "string" && result.trim()) {
+        cachedWorkingModel = model;
         return result;
       }
       return textBatch;
     } catch (error) {
+      lastError = error;
       const status = error.response?.status;
       const errorMsg = error.response?.data?.error?.message || error.message || "";
 
-      // Model fallback on 404 or deprecation error
       const isModelUnavailable =
         status === 404 ||
         (status === 400 && (
@@ -80,19 +90,16 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
           errorMsg.toLowerCase().includes("models/")
         ));
 
-      if (isModelUnavailable && fallbackIndex < GEMINI_LIVE_MODELS.length) {
-        const nextModel = GEMINI_LIVE_MODELS[fallbackIndex++];
-        if (nextModel !== model) {
-          console.warn(`[Gemini Live] Model '${model}' unavailable, switching to '${nextModel}'...`);
-          model = nextModel;
-          continue;
-        }
+      if (isModelUnavailable) {
+        console.warn(`[Gemini Live] Model '${model}' returned 404/not-found. Trying next active model in cascade...`);
+        continue;
       }
 
       throw error;
     }
   }
 
+  if (lastError) throw lastError;
   return textBatch;
 }
 
@@ -109,10 +116,22 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
     throw new Error("Invalid or empty audio buffer");
   }
 
-  let model = sanitizeGeminiModel(modelName);
-  let fallbackIndex = 0;
+  const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? modelName.trim() : null;
+  const initialModel = requestedModel || cachedWorkingModel || "gemini-2.5-flash";
 
-  for (let attempt = 0; attempt <= 2; attempt++) {
+  const candidateModels = [
+    initialModel,
+    ...(requestedModel ? [requestedModel] : []),
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro"
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+  let lastError = null;
+
+  for (const model of candidateModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
       const promptText = `You are an expert audio transcriber and movie subtitle generator. Listen to the provided audio stream, transcribe all spoken dialogue accurately with precise timestamps, and translate the dialogue directly into language '${targetLang}'. Output ONLY valid SubRip (SRT) format with cue numbers and timestamps (HH:MM:SS,mmm --> HH:MM:SS,mmm). Do not add explanations, notes, or markdown backticks:`;
@@ -143,11 +162,12 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
 
       const result = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (result && typeof result === "string" && result.trim()) {
-        // Strip any markdown code fences globally
+        cachedWorkingModel = model;
         return result.replace(/```(?:srt|vtt)?/gi, "").replace(/```/g, "").trim();
       }
       return "";
     } catch (error) {
+      lastError = error;
       const status = error.response?.status;
       const errorMsg = error.response?.data?.error?.message || error.message || "";
 
@@ -161,13 +181,9 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
           errorMsg.toLowerCase().includes("models/")
         ));
 
-      if (isModelUnavailable && fallbackIndex < GEMINI_LIVE_MODELS.length) {
-        const nextModel = GEMINI_LIVE_MODELS[fallbackIndex++];
-        if (nextModel !== model) {
-          console.warn(`[Gemini Audio] Model '${model}' unavailable, switching to '${nextModel}'...`);
-          model = nextModel;
-          continue;
-        }
+      if (isModelUnavailable) {
+        console.warn(`[Gemini Audio] Model '${model}' returned 404/not-found. Trying next active model in cascade...`);
+        continue;
       }
 
       console.error("[Gemini Audio-to-Subtitle Error]:", errorMsg);
@@ -175,6 +191,7 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
     }
   }
 
+  if (lastError) throw lastError;
   return "";
 }
 

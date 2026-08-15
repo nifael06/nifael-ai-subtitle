@@ -596,36 +596,38 @@ app.post("/api/verify-key", async (req, res) => {
 
   try {
     if (provider === "gemini" || provider === "gemini_live") {
-      let selectedModel = sanitizeGeminiModel(model);
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`;
-        const response = await axios.post(
-          url,
-          {
-            contents: [{ parts: [{ text: "Translate: Hello" }] }]
-          },
-          { timeout: 8000 }
-        );
-        if (response.data && response.data.candidates) {
-          return res.json({ success: true, message: `Valid & Working (${selectedModel})` });
-        }
-        return res.json({ success: true, message: "Valid & Working" });
-      } catch (gemErr) {
-        // If model failed or was deprecated, auto-fallback to gemini-3.5-flash-lite
-        if (selectedModel !== "gemini-3.5-flash-lite" && (gemErr.response?.status === 404 || gemErr.response?.status === 400)) {
-          selectedModel = "gemini-3.5-flash-lite";
-          const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`;
-          const retryRes = await axios.post(
-            retryUrl,
+      const requestedModel = (model && typeof model === "string" && model.trim()) ? model.trim() : null;
+      const candidateModels = [
+        requestedModel,
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-2.5-pro"
+      ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+      let lastErr = null;
+      for (const curModel of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${curModel}:generateContent?key=${key}`;
+          const response = await axios.post(
+            url,
             { contents: [{ parts: [{ text: "Translate: Hello" }] }] },
             { timeout: 8000 }
           );
-          if (retryRes.data && retryRes.data.candidates) {
-            return res.json({ success: true, message: `Valid & Working (${selectedModel})` });
+          if (response.data && response.data.candidates) {
+            return res.json({ success: true, message: `Valid & Working (${curModel})` });
           }
+        } catch (gemErr) {
+          lastErr = gemErr;
+          if (gemErr.response?.status === 404 || gemErr.response?.status === 400) {
+            continue;
+          }
+          throw gemErr;
         }
-        throw gemErr;
       }
+      if (lastErr) throw lastErr;
     } else if (provider === "openai") {
       const response = await axios.get("https://api.openai.com/v1/models", {
         headers: { Authorization: `Bearer ${key}` },
