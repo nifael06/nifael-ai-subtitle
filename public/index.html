@@ -2133,56 +2133,69 @@
           const cues = await fetchSubSegment({ videoUrl, apiKey, targetLang, startTime, duration });
           activeCues = cues;
         } else {
-          // Progressive Multi-segment Processing
+          // Progressive Multi-segment Processing with 3x Turbo Parallel Concurrency
           let targetTotalSec = 7200; // 2 hours default for full movie
           if (rangeMode === "15min") targetTotalSec = 900;
           else if (rangeMode === "30min") targetTotalSec = 1800;
 
           const CHUNK_SECONDS = 90; // 1.5 minutes per chunk
           const maxChunks = Math.ceil(targetTotalSec / CHUNK_SECONDS);
-          let consecutiveEmpty = 0;
+          const chunkResults = new Array(maxChunks);
+          let completedChunks = 0;
+          let nextChunkIndex = 0;
+          let totalCuesFound = 0;
 
-          for (let i = 0; i < maxChunks; i++) {
-            if (stopRequested) {
-              console.log("Stop requested by user. Finalizing generated cues...");
-              break;
-            }
+          const CONCURRENCY = 3; // 3 parallel stream workers for 3x speedup!
 
-            const currentOffsetSec = i * CHUNK_SECONDS;
-            const startTs = msToSrtTs(currentOffsetSec * 1000).split(",")[0];
-            const offsetMs = currentOffsetSec * 1000;
+          async function chunkWorker(workerId) {
+            // Slight stagger on launch to prevent burst rate limit
+            if (workerId > 0) await new Promise(r => setTimeout(r, workerId * 300));
 
-            const minElapsed = (currentOffsetSec / 60).toFixed(1);
-            setStep(3, "active", `Gemini Live Transcribing: Min ${minElapsed}m (${activeCues.length} Cues generated)...`);
+            while (nextChunkIndex < maxChunks) {
+              if (stopRequested) break;
+              const idx = nextChunkIndex++;
+              const currentOffsetSec = idx * CHUNK_SECONDS;
+              const startTs = msToSrtTs(currentOffsetSec * 1000).split(",")[0];
+              const offsetMs = currentOffsetSec * 1000;
 
-            try {
-              const segCues = await fetchSubSegment({
-                videoUrl,
-                apiKey,
-                targetLang,
-                startTime: startTs,
-                duration: CHUNK_SECONDS,
-                offsetMs
-              });
+              try {
+                const segCues = await fetchSubSegment({
+                  videoUrl,
+                  apiKey,
+                  targetLang,
+                  startTime: startTs,
+                  duration: CHUNK_SECONDS,
+                  offsetMs
+                });
 
-              if (segCues.length === 0) {
-                consecutiveEmpty++;
-                if (consecutiveEmpty >= 8 && activeCues.length > 0) {
-                  // 12 minutes of consecutive silence / end of video stream
-                  break;
-                }
-              } else {
-                consecutiveEmpty = 0;
-                activeCues.push(...segCues);
+                chunkResults[idx] = segCues || [];
+                completedChunks++;
+                totalCuesFound += (segCues ? segCues.length : 0);
+
+                const percent = Math.round((completedChunks / maxChunks) * 100);
+                const minDone = (completedChunks * 1.5).toFixed(1);
+                setStep(3, "active", `⚡ Turbo Parallel: ${completedChunks}/${maxChunks} slices (~${minDone} mins | ${totalCuesFound} Cues generated)...`);
+              } catch (segErr) {
+                console.warn(`Segment ${idx} notice:`, segErr.message);
+                chunkResults[idx] = [];
+                completedChunks++;
               }
-            } catch (segErr) {
-              if (activeCues.length > 0) {
-                console.warn("Segment reached end of video stream:", segErr.message);
-                break;
-              }
-              throw segErr;
             }
           }
+
+          // Launch parallel workers
+          const workers = [];
+          const numWorkers = Math.min(CONCURRENCY, maxChunks);
+          for (let w = 0; w < numWorkers; w++) {
+            workers.push(chunkWorker(w));
+          }
+          await Promise.all(workers);
+
+          // Assemble, flatten, and chronologically sort all cues
+          activeCues = chunkResults.filter(Boolean).flat();
+          activeCues.sort((a, b) => parseTsToMs(a.startTime) - parseTsToMs(b.startTime));
+          // Re-index cues cleanly
+          activeCues.forEach((c, idx) => { c.id = String(idx + 1); });
         }
 
         if (activeCues.length === 0) {
