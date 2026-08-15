@@ -262,21 +262,27 @@ class QuotaExceededError extends Error {
   }
 }
 
-// Active Google Gemini models in order of priority
+// Active Google Gemini 3.5+ models in order of priority
 const GEMINI_ACTIVE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.5-pro"
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.7-flash",
+  "gemini-3.5-pro",
+  "gemini-3.7-pro"
 ];
 
 let cachedGeminiWorkingModel = null;
 
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return cachedGeminiWorkingModel || "gemini-2.5-flash";
-  return customModel.trim();
+  if (!customModel || typeof customModel !== "string") return cachedGeminiWorkingModel || "gemini-3.5-flash-lite";
+  const trimmed = customModel.trim();
+  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-flash-lite
+  if (/gemini-(1\.|2\.)/i.test(trimmed)) {
+    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-flash-lite'.`);
+    return "gemini-3.5-flash-lite";
+  }
+  return trimmed;
 }
 
 /**
@@ -286,18 +292,18 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel, m
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) return await translateWithGoogle(textBatch, targetLang);
 
-  const requestedModel = (customModel && typeof customModel === "string" && customModel.trim()) ? customModel.trim() : null;
-  const initialModel = requestedModel || cachedGeminiWorkingModel || "gemini-2.5-flash";
+  const requestedModel = (customModel && typeof customModel === "string" && customModel.trim()) ? sanitizeGeminiModel(customModel) : null;
+  const initialModel = requestedModel || cachedGeminiWorkingModel || "gemini-3.5-flash-lite";
 
   const candidateModels = [
     initialModel,
     ...(requestedModel ? [requestedModel] : []),
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-    "gemini-2.5-pro"
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.5-pro",
+    "gemini-3.7-pro"
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   const backoffDelays = [500, 1000, 2000];

@@ -1,13 +1,13 @@
 const axios = require("axios");
 
-// Fallback cascade for active Google Gemini models
+// Fallback cascade for active Google Gemini 3.5+ models only
 const GEMINI_LIVE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.5-pro"
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.7-flash",
+  "gemini-3.5-pro",
+  "gemini-3.7-pro"
 ];
 
 const SAFETY_SETTINGS = [
@@ -21,11 +21,17 @@ const SAFETY_SETTINGS = [
 let cachedWorkingModel = null;
 
 /**
- * Filter and sanitize model name to ensure valid format
+ * Filter and sanitize model name to ensure only Gemini 3.5+ models are used
  */
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return cachedWorkingModel || "gemini-2.5-flash";
-  return customModel.trim();
+  if (!customModel || typeof customModel !== "string") return cachedWorkingModel || "gemini-3.5-flash-lite";
+  const trimmed = customModel.trim();
+  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to 3.5-flash-lite
+  if (/gemini-(1\.|2\.)/i.test(trimmed)) {
+    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-flash-lite'.`);
+    return "gemini-3.5-flash-lite";
+  }
+  return trimmed;
 }
 
 /**
@@ -37,19 +43,19 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
     throw new Error("Gemini API key is required for Gemini Live Stream");
   }
 
-  const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? modelName.trim() : null;
-  const initialModel = requestedModel || cachedWorkingModel || "gemini-2.5-flash";
+  const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? sanitizeGeminiModel(modelName) : null;
+  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-flash-lite";
 
-  // Build list of models to try in sequence: requested model first, then the cascade
+  // Build list of Gemini 3.5+ models to try in sequence
   const candidateModels = [
     initialModel,
     ...(requestedModel ? [requestedModel] : []),
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-    "gemini-2.5-pro"
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.5-pro",
+    "gemini-3.7-pro"
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   let lastError = null;
@@ -91,7 +97,7 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
         ));
 
       if (isModelUnavailable) {
-        console.warn(`[Gemini Live] Model '${model}' returned 404/not-found. Trying next active model in cascade...`);
+        console.warn(`[Gemini Live] Model '${model}' returned 404/not-found. Trying next active Gemini 3.5+ model...`);
         continue;
       }
 
@@ -116,17 +122,18 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
     throw new Error("Invalid or empty audio buffer");
   }
 
-  const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? modelName.trim() : null;
-  const initialModel = requestedModel || cachedWorkingModel || "gemini-2.5-flash";
+  const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? sanitizeGeminiModel(modelName) : null;
+  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-flash-lite";
 
   const candidateModels = [
     initialModel,
     ...(requestedModel ? [requestedModel] : []),
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro"
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.5-pro",
+    "gemini-3.7-pro"
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   let lastError = null;
