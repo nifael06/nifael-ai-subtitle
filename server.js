@@ -71,10 +71,17 @@ function parseConfig(configStr) {
   if (configStr.includes("=") && (configStr.includes("lang") || configStr.includes("engine"))) {
     try {
       const params = new URLSearchParams(configStr);
+      const engine = params.get("engine") || defaults.engine;
+      const engineKey = (
+        engine === "gemini" || engine === "gemini_live" ? (params.get("geminiKey") || params.get("geminiLiveKey")) :
+        engine === "openai" ? params.get("openaiKey") :
+        engine === "deepl" ? params.get("deeplKey") : ""
+      );
+
       return {
         lang: params.get("lang") || defaults.lang,
-        engine: params.get("engine") || defaults.engine,
-        apiKey: params.get("apiKey") || "",
+        engine: engine,
+        apiKey: params.get("apiKey") || engineKey || "",
         model: params.get("model") || "",
         subdlKey: params.get("subdlKey") || "",
         osKey: params.get("osKey") || "",
@@ -88,10 +95,17 @@ function parseConfig(configStr) {
   if (decoded) {
     try {
       const parsed = JSON.parse(decoded);
+      const engine = parsed.engine || defaults.engine;
+      const engineKey = (
+        engine === "gemini" || engine === "gemini_live" ? (parsed.geminiKey || parsed.geminiLiveKey) :
+        engine === "openai" ? parsed.openaiKey :
+        engine === "deepl" ? parsed.deeplKey : ""
+      );
+
       return {
         lang: parsed.lang || defaults.lang,
-        engine: parsed.engine || defaults.engine,
-        apiKey: parsed.apiKey || "",
+        engine: engine,
+        apiKey: parsed.apiKey || engineKey || "",
         model: parsed.model || "",
         subdlKey: parsed.subdlKey || "",
         osKey: parsed.osKey || "",

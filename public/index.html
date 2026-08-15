@@ -767,7 +767,7 @@
       <div class="form-group" id="apiKeyGroup">
         <label for="apiKeyInput" id="apiKeyLabel">API Key</label>
         <div class="input-btn-wrap">
-          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="updateManifestUrl(); clearVerifyBadge('ai'); markUnsaved()">
+          <input type="password" id="apiKeyInput" placeholder="Paste your API key here" oninput="handleApiKeyInput()">
           <button type="button" class="btn-test" id="testAiKeyBtn" onclick="testKey('ai')">
             <span>⚡ Test Key</span>
           </button>
@@ -914,6 +914,27 @@
   </div>
 
   <script>
+    // Dedicated API keys per translation engine
+    const engineKeys = {
+      gemini_live: "",
+      gemini: "",
+      openai: "",
+      deepl: ""
+    };
+
+    function handleApiKeyInput() {
+      const engine = document.getElementById("engineSelect").value;
+      const val = document.getElementById("apiKeyInput").value.trim();
+      engineKeys[engine] = val;
+      if (engine === "gemini" || engine === "gemini_live") {
+        engineKeys.gemini = val;
+        engineKeys.gemini_live = val;
+      }
+      updateManifestUrl();
+      clearVerifyBadge("ai");
+      markUnsaved();
+    }
+
     function handleEngineChange() {
       const engine = document.getElementById("engineSelect").value;
       const keyGroup = document.getElementById("apiKeyGroup");
@@ -922,6 +943,10 @@
       const modelInput = document.getElementById("modelInput");
       const modelHint = document.getElementById("modelHint");
       const engineBadge = document.getElementById("engineBadge");
+
+      // Populate API key input with the selected engine's specific key
+      document.getElementById("apiKeyInput").value = engineKeys[engine] || "";
+      clearVerifyBadge("ai");
 
       if (engine === "google") {
         keyGroup.style.display = "none";
@@ -1013,18 +1038,33 @@
     function getManifestUrl() {
       const lang = document.getElementById("languageSelect").value;
       const engine = document.getElementById("engineSelect").value;
-      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput").value).trim();
       const model = document.getElementById("modelInput").value.trim();
       const osKey = document.getElementById("osKeyInput").value.trim();
       const subdlKey = document.getElementById("subdlKeyInput").value.trim();
       const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
 
+      const geminiKey = engineKeys.gemini || engineKeys.gemini_live || "";
+      const openaiKey = engineKeys.openai || "";
+      const deeplKey = engineKeys.deepl || "";
+
       // If pure default with zero custom keys
-      if (engine === "google" && !apiKey && !model && !osKey && !subdlKey && !subsourceKey) {
+      if (engine === "google" && !activeKey && !model && !osKey && !subdlKey && !subsourceKey) {
         return `${window.location.origin}/${lang}/manifest.json`;
       }
 
-      const configObj = { lang, engine, apiKey, model, osKey, subdlKey, subsourceKey };
+      const configObj = {
+        lang,
+        engine,
+        apiKey: activeKey,
+        geminiKey,
+        openaiKey,
+        deeplKey,
+        model,
+        osKey,
+        subdlKey,
+        subsourceKey
+      };
       const configStr = encodeUrlSafeBase64(JSON.stringify(configObj));
       return `${window.location.origin}/${configStr}/manifest.json`;
     }
@@ -1032,17 +1072,32 @@
     function getShareUrl() {
       const lang = document.getElementById("languageSelect").value;
       const engine = document.getElementById("engineSelect").value;
-      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput").value).trim();
       const model = document.getElementById("modelInput").value.trim();
       const osKey = document.getElementById("osKeyInput").value.trim();
       const subdlKey = document.getElementById("subdlKeyInput").value.trim();
       const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
 
-      if (engine === "google" && !apiKey && !model && !osKey && !subdlKey && !subsourceKey) {
+      const geminiKey = engineKeys.gemini || engineKeys.gemini_live || "";
+      const openaiKey = engineKeys.openai || "";
+      const deeplKey = engineKeys.deepl || "";
+
+      if (engine === "google" && !activeKey && !model && !osKey && !subdlKey && !subsourceKey) {
         return `${window.location.origin}/configure?lang=${encodeURIComponent(lang)}`;
       }
 
-      const configObj = { lang, engine, apiKey, model, osKey, subdlKey, subsourceKey };
+      const configObj = {
+        lang,
+        engine,
+        apiKey: activeKey,
+        geminiKey,
+        openaiKey,
+        deeplKey,
+        model,
+        osKey,
+        subdlKey,
+        subsourceKey
+      };
       const configStr = encodeUrlSafeBase64(JSON.stringify(configObj));
       return `${window.location.origin}/${configStr}/configure`;
     }
@@ -1230,13 +1285,28 @@
     function saveSettings() {
       const lang = document.getElementById("languageSelect").value;
       const engine = document.getElementById("engineSelect").value;
-      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const activeKey = (engineKeys[engine] || document.getElementById("apiKeyInput").value).trim();
       const model = document.getElementById("modelInput").value.trim();
       const osKey = document.getElementById("osKeyInput").value.trim();
       const subdlKey = document.getElementById("subdlKeyInput").value.trim();
       const subsourceKey = document.getElementById("subsourceKeyInput").value.trim();
 
-      const configObj = { lang, engine, apiKey, model, osKey, subdlKey, subsourceKey };
+      const geminiKey = engineKeys.gemini || engineKeys.gemini_live || "";
+      const openaiKey = engineKeys.openai || "";
+      const deeplKey = engineKeys.deepl || "";
+
+      const configObj = {
+        lang,
+        engine,
+        apiKey: activeKey,
+        geminiKey,
+        openaiKey,
+        deeplKey,
+        model,
+        osKey,
+        subdlKey,
+        subsourceKey
+      };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(configObj));
       } catch (e) {}
@@ -1287,6 +1357,9 @@
           if (searchParams.has("lang")) configData.lang = searchParams.get("lang");
           if (searchParams.has("engine")) configData.engine = searchParams.get("engine");
           if (searchParams.has("apiKey")) configData.apiKey = searchParams.get("apiKey");
+          if (searchParams.has("geminiKey")) configData.geminiKey = searchParams.get("geminiKey");
+          if (searchParams.has("openaiKey")) configData.openaiKey = searchParams.get("openaiKey");
+          if (searchParams.has("deeplKey")) configData.deeplKey = searchParams.get("deeplKey");
           if (searchParams.has("model")) configData.model = searchParams.get("model");
           if (searchParams.has("osKey")) configData.osKey = searchParams.get("osKey");
           if (searchParams.has("subdlKey")) configData.subdlKey = searchParams.get("subdlKey");
@@ -1304,6 +1377,21 @@
         }
 
         if (configData) {
+          if (configData.geminiKey) {
+            engineKeys.gemini = configData.geminiKey;
+            engineKeys.gemini_live = configData.geminiKey;
+          }
+          if (configData.openaiKey) engineKeys.openai = configData.openaiKey;
+          if (configData.deeplKey) engineKeys.deepl = configData.deeplKey;
+          if (configData.apiKey) {
+            const curEngine = configData.engine || "google";
+            engineKeys[curEngine] = configData.apiKey;
+            if (curEngine === "gemini" || curEngine === "gemini_live") {
+              engineKeys.gemini = configData.apiKey;
+              engineKeys.gemini_live = configData.apiKey;
+            }
+          }
+
           if (configData.lang && document.querySelector(`#languageSelect option[value="${configData.lang}"]`)) {
             document.getElementById("languageSelect").value = configData.lang;
           }
@@ -1312,7 +1400,6 @@
           }
           handleEngineChange();
 
-          if (configData.apiKey) document.getElementById("apiKeyInput").value = configData.apiKey;
           if (configData.model) document.getElementById("modelInput").value = configData.model;
           if (configData.osKey) document.getElementById("osKeyInput").value = configData.osKey;
           if (configData.subdlKey) document.getElementById("subdlKeyInput").value = configData.subdlKey;
