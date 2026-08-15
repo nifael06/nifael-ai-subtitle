@@ -227,6 +227,22 @@ function cleanCues(cues) {
 }
 
 /**
+ * Format timestamp strictly into SubRip SRT standard HH:MM:SS,mmm with commas
+ */
+function formatSrtTimestamp(ts) {
+  if (!ts) return "00:00:00,000";
+  const clean = String(ts).replace(".", ",").trim().split(/\s+/)[0];
+  const parts = clean.split(":");
+  if (parts.length === 2) parts.unshift("00");
+  const hh = String(parts[0] || "00").padStart(2, "0");
+  const mm = String(parts[1] || "00").padStart(2, "0");
+  const secParts = String(parts[2] || "00,000").split(",");
+  const ss = String(secParts[0] || "00").padStart(2, "0");
+  const mss = String(secParts[1] || "000").padEnd(3, "0").substring(0, 3);
+  return `${hh}:${mm}:${ss},${mss}`;
+}
+
+/**
  * 3. Convert cue array into standard WebVTT format with Strict Chronological Timestamp Sorting
  */
 function cuesToVtt(cues) {
@@ -252,12 +268,37 @@ function cuesToVtt(cues) {
   return vtt;
 }
 
+/**
+ * 4. Convert cue array into standard SubRip (.SRT) format
+ */
+function cuesToSrt(cues) {
+  let srt = "";
+  const cueList = Array.isArray(cues) ? [...cues] : (cues && Array.isArray(cues.cues) ? [...cues.cues] : []);
+  if (cueList.length === 0) return "";
+
+  cueList.sort((a, b) => timeToMs(a?.startTime || a?.start) - timeToMs(b?.startTime || b?.start));
+
+  cueList.forEach((cue, index) => {
+    if (!cue) return;
+    const start = formatSrtTimestamp(cue.startTime || cue.start);
+    const end = formatSrtTimestamp(cue.endTime || cue.end);
+    const text = typeof cue.text === "string" ? cue.text.trim() : "";
+    const id = String(index + 1);
+
+    srt += `${id}\n${start} --> ${end}\n${text}\n\n`;
+  });
+
+  return srt.trim() + "\n";
+}
+
 module.exports = {
   parseSrt,
   cleanCues,
   cuesToVtt,
+  cuesToSrt,
   timeToMs,
   formatVttTimestamp,
+  formatSrtTimestamp,
   normalizeTimestamp,
   cleanTextContent
 };

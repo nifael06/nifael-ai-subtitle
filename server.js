@@ -5,7 +5,7 @@ const cors = require("cors");
 const axios = require("axios");
 const manifest = require("./manifest");
 const { searchAllSubtitles, downloadSubtitleText } = require("./providers");
-const { parseSrt, cleanCues, cuesToVtt } = require("./srtHelper");
+const { parseSrt, cleanCues, cuesToVtt, cuesToSrt } = require("./srtHelper");
 const { translateCues } = require("./translator");
 const { extractEmbeddedSubtitle, extractAudioChunk } = require("./embeddedExtractor");
 const { audioToSubtitleGemini, sanitizeGeminiModel } = require("./geminiStream");
@@ -611,7 +611,88 @@ app.get("/api/live-audio-sub", async (req, res) => {
   }
 });
 
-// 7. API Key & Provider Verification Endpoint
+// 7. Video URL to Gemini 3.5 Live Subtitle Generator (.SRT / .VTT) Endpoint
+app.post("/api/video-to-sub", async (req, res) => {
+  try {
+    const { videoUrl, targetLang, apiKey, model, startTime, duration } = req.body || {};
+
+    if (!videoUrl || typeof videoUrl !== "string" || !videoUrl.trim()) {
+      return res.status(400).json({ success: false, message: "Valid Video URL is required." });
+    }
+
+    const key = (apiKey || process.env.GEMINI_API_KEY || "").trim();
+    if (!key) {
+      return res.status(400).json({ success: false, message: "Google Gemini API key is required." });
+    }
+
+    const lang = targetLang || "ms";
+    const selectedModel = model || "gemini-3.5-live-translate-preview";
+    const safeStart = typeof startTime === "string" && startTime.trim() ? startTime.trim() : "00:00:00";
+    const safeDur = duration ? Math.min(1800, Math.max(10, parseInt(duration, 10))) : 600;
+
+    console.log(`[nifael AI Studio] 🎬 Processing Video URL to Subtitle -> Target: ${lang} | Model: ${selectedModel} | Dur: ${safeDur}s | URL: ${videoUrl}`);
+
+    // 1. Extract audio chunk on the fly via ffmpeg
+    const audioBase64 = await extractAudioChunk(videoUrl.trim(), safeStart, safeDur);
+    if (!audioBase64) {
+      return res.status(500).json({ success: false, message: "Failed to extract audio channel from video stream. Please verify the URL is directly accessible." });
+    }
+
+    // 2. Transcribe and Translate via Gemini 3.5 Live Multimodal AI
+    const rawSrt = await audioToSubtitleGemini(audioBase64, lang, key, selectedModel);
+    if (!rawSrt || !rawSrt.trim()) {
+      return res.status(500).json({ success: false, message: "Gemini AI was unable to detect or transcribe spoken dialogue from the audio stream." });
+    }
+
+    // 3. Parse and clean cues
+    const parsedCues = parseSrt(rawSrt);
+    const cleanedCues = cleanCues(parsedCues);
+
+    if (cleanedCues.length === 0) {
+      return res.status(500).json({ success: false, message: "No dialogue cues were generated from the video audio." });
+    }
+
+    // 4. Build standard SRT and WebVTT outputs
+    const srtContent = cuesToSrt(cleanedCues);
+    const vttContent = cuesToVtt(cleanedCues);
+
+    return res.json({
+      success: true,
+      srt: srtContent,
+      vtt: vttContent,
+      cues: cleanedCues,
+      cueCount: cleanedCues.length,
+      targetLang: lang,
+      modelUsed: selectedModel
+    });
+  } catch (error) {
+    console.error("[nifael AI Studio] Video-to-sub error:", error.message);
+    return res.status(500).json({ success: false, message: error.message || "Failed to process video to subtitle." });
+  }
+});
+
+// 8. Re-translate or Polish Individual Subtitle Cue
+app.post("/api/retranslate-cue", async (req, res) => {
+  try {
+    const { text, targetLang, apiKey, model } = req.body || {};
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({ success: false, message: "Text is required." });
+    }
+
+    const lang = targetLang || "ms";
+    const key = (apiKey || process.env.GEMINI_API_KEY || "").trim();
+    const selectedModel = model || "gemini-3.5-live-translate-preview";
+
+    const { streamTranslateGemini } = require("./geminiStream");
+    const translated = await streamTranslateGemini(text.trim(), lang, key, selectedModel);
+
+    return res.json({ success: true, text: translated.trim() });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 9. API Key & Provider Verification Endpoint
 app.post("/api/verify-key", async (req, res) => {
   const { provider, apiKey, model } = req.body || {};
 
