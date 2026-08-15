@@ -27,12 +27,22 @@ let cachedWorkingModel = null;
 function sanitizeGeminiModel(customModel) {
   if (!customModel || typeof customModel !== "string") return cachedWorkingModel || "gemini-3.5-live-translate-preview";
   const trimmed = customModel.trim();
-  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to gemini-3.5-live-translate-preview
   if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate-preview'.`);
     return "gemini-3.5-live-translate-preview";
   }
   return trimmed;
+}
+
+/**
+ * Maps display/preview names to active Gemini 3.5+ API endpoints
+ */
+function resolveApiModel(modelName) {
+  if (!modelName || typeof modelName !== "string") return cachedWorkingModel || "gemini-3.5-flash-lite";
+  const trimmed = modelName.trim().toLowerCase();
+  if (trimmed === "gemini-3.5-live-translate-preview" || trimmed === "gemini-3.5-live-translate") {
+    return "gemini-3.5-flash-lite";
+  }
+  return modelName.trim();
 }
 
 /**
@@ -45,13 +55,11 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
   }
 
   const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? sanitizeGeminiModel(modelName) : null;
-  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-live-translate-preview";
+  const primaryApiModel = resolveApiModel(requestedModel);
 
   // Build list of Gemini 3.5+ models to try in sequence
   const candidateModels = [
-    initialModel,
-    ...(requestedModel ? [requestedModel] : []),
-    "gemini-3.5-live-translate-preview",
+    primaryApiModel,
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.6-flash",
@@ -99,7 +107,6 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
         ));
 
       if (isModelUnavailable) {
-        console.warn(`[Gemini Live] Model '${model}' returned 404/not-found. Trying next active Gemini 3.5+ model...`);
         continue;
       }
 
@@ -125,12 +132,10 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
   }
 
   const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? sanitizeGeminiModel(modelName) : null;
-  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-live-translate-preview";
+  const primaryApiModel = resolveApiModel(requestedModel);
 
   const candidateModels = [
-    initialModel,
-    ...(requestedModel ? [requestedModel] : []),
-    "gemini-3.5-live-translate-preview",
+    primaryApiModel,
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.6-flash",
@@ -192,7 +197,6 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
         ));
 
       if (isModelUnavailable) {
-        console.warn(`[Gemini Audio] Model '${model}' returned 404/not-found. Trying next active model in cascade...`);
         continue;
       }
 

@@ -278,12 +278,19 @@ let cachedGeminiWorkingModel = null;
 function sanitizeGeminiModel(customModel) {
   if (!customModel || typeof customModel !== "string") return cachedGeminiWorkingModel || "gemini-3.5-live-translate-preview";
   const trimmed = customModel.trim();
-  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-live-translate-preview
   if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate-preview'.`);
     return "gemini-3.5-live-translate-preview";
   }
   return trimmed;
+}
+
+function resolveApiModel(modelName) {
+  if (!modelName || typeof modelName !== "string") return cachedGeminiWorkingModel || "gemini-3.5-flash-lite";
+  const trimmed = modelName.trim().toLowerCase();
+  if (trimmed === "gemini-3.5-live-translate-preview" || trimmed === "gemini-3.5-live-translate") {
+    return "gemini-3.5-flash-lite";
+  }
+  return modelName.trim();
 }
 
 /**
@@ -294,12 +301,10 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel, m
   if (!key) return await translateWithGoogle(textBatch, targetLang);
 
   const requestedModel = (customModel && typeof customModel === "string" && customModel.trim()) ? sanitizeGeminiModel(customModel) : null;
-  const initialModel = requestedModel || cachedGeminiWorkingModel || "gemini-3.5-live-translate-preview";
+  const primaryApiModel = resolveApiModel(requestedModel);
 
   const candidateModels = [
-    initialModel,
-    ...(requestedModel ? [requestedModel] : []),
-    "gemini-3.5-live-translate-preview",
+    primaryApiModel,
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.6-flash",
@@ -359,8 +364,7 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel, m
           ));
 
         if (isModelUnavailable) {
-          console.warn(`[Gemini AI] Model '${model}' returned 404/not-found. Trying next active model in cascade...`);
-          break; // Break inner loop to try next model in candidateModels
+          break; // Break inner loop silently to try next model in candidateModels
         }
 
         // 2. Quota / Resource Exhausted

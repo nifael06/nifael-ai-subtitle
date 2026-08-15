@@ -597,9 +597,9 @@ app.post("/api/verify-key", async (req, res) => {
   try {
     if (provider === "gemini" || provider === "gemini_live") {
       const requestedModel = (model && typeof model === "string" && model.trim()) ? model.trim() : null;
+      const primaryApiModel = (requestedModel && requestedModel.toLowerCase().includes("live-translate")) ? "gemini-3.5-flash-lite" : requestedModel;
       const candidateModels = [
-        requestedModel,
-        "gemini-3.5-live-translate-preview",
+        primaryApiModel,
         "gemini-3.5-flash-lite",
         "gemini-3.5-flash",
         "gemini-3.6-flash",
