@@ -45,6 +45,51 @@ function resolveApiModel(modelName) {
   return modelName.trim();
 }
 
+const LANGUAGE_NAMES = {
+  ms: "Malay (Bahasa Melayu)",
+  id: "Indonesian (Bahasa Indonesia)",
+  en: "English",
+  es: "Spanish (Español)",
+  fr: "French (Français)",
+  de: "German (Deutsch)",
+  it: "Italian (Italiano)",
+  pt: "Portuguese (Português)",
+  ru: "Russian (Русский)",
+  ja: "Japanese (日本語)",
+  ko: "Korean (한국어)",
+  zh: "Simplified Chinese (简体中文)",
+  zt: "Traditional Chinese (繁體中文)",
+  ar: "Arabic (العربية)",
+  hi: "Hindi (हिन्दी)",
+  th: "Thai (ไทย)",
+  vi: "Vietnamese (Tiếng Việt)",
+  tl: "Filipino (Tagalog)",
+  tr: "Turkish (Türkçe)",
+  nl: "Dutch (Nederlands)",
+  pl: "Polish (Polski)",
+  sv: "Swedish (Svenska)",
+  da: "Danish (Dansk)",
+  no: "Norwegian (Norsk)",
+  fi: "Finnish (Suomi)",
+  el: "Greek (Ελληνικά)",
+  cs: "Czech (Čeština)",
+  ro: "Romanian (Română)",
+  hu: "Hungarian (Magyar)",
+  uk: "Ukrainian (Українська)",
+  he: "Hebrew (עברית)",
+  bn: "Bengali (বাংলা)",
+  ta: "Tamil (தமிழ்)",
+  te: "Telugu (తెలుగు)",
+  ur: "Urdu (اردو)",
+  fa: "Persian (فارسی)"
+};
+
+function getLanguageName(code) {
+  if (!code) return "English";
+  const clean = String(code).toLowerCase().trim().split("-")[0];
+  return LANGUAGE_NAMES[clean] || LANGUAGE_NAMES[code.toLowerCase()] || code;
+}
+
 /**
  * 1. Ultra-fast progressive Gemini translation engine with multi-model fallback cascade
  */
@@ -69,11 +114,15 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   let lastError = null;
+  const langName = getLanguageName(targetLang);
 
   for (const model of candidateModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const prompt = `You are a real-time ultra-fast subtitle translation engine. Translate the following subtitle batch into language '${targetLang}'. Keep all '<<<SEG>>>' and '---SEG---' delimiters verbatim between subtitle lines. Return ONLY the translated subtitle lines:\n\n${textBatch}`;
+      const prompt = `You are a professional movie and television subtitle translator.
+Translate all subtitle text strictly into ${langName}.
+Keep all '<<<SEG>>>' and '---SEG---' delimiters verbatim between subtitle lines.
+Every single line must be written in ${langName}. Return ONLY the translated subtitle lines:\n\n${textBatch}`;
 
       const response = await axios.post(
         url,
@@ -253,24 +302,27 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   let lastError = null;
+  const langName = getLanguageName(targetLang);
 
   for (const model of candidateModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const promptText = `You are a master movie subtitle translator. Listen to the spoken voice in this audio clip, detect the speech timestamps, and translate the dialogue into natural language '${targetLang}'.
+      const promptText = `You are a professional movie and television subtitle translator.
+Your instructions:
+1. Listen carefully to all character voices and speech in this audio clip.
+2. Translate all spoken dialogue directly into ${langName}.
+3. Every single output subtitle line MUST be written entirely in ${langName}. Do NOT use Japanese, English, or any other language unless the target language is that language.
+4. Synchronize the start and end timestamps precisely to the voice.
+5. If there is no dialogue or only background music/silence, return nothing.
 
-Rules:
-1. Transcribe EVERY sentence or phrase spoken by characters.
-2. Ensure the timestamps match the exact voice start and end in the audio.
-3. Output strictly in standard numbered SubRip (SRT) format without markdown backticks:
-
+Output strictly in standard numbered SubRip (SRT) format without markdown backticks:
 1
 00:00:01,000 --> 00:00:04,500
-[Translated dialogue]
+[Translated subtitle in ${langName}]
 
 2
 00:00:05,000 --> 00:00:08,200
-[Translated dialogue]`;
+[Translated subtitle in ${langName}]`;
 
       const response = await axios.post(
         url,
