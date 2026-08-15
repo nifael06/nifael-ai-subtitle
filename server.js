@@ -236,9 +236,14 @@ function mapToStremioLang(code) {
 // - To extract and translate embedded MKV/MP4 subtitle tracks directly from remote video streams,
 //   Stream Addons (e.g. AIOStreams, Debrid proxies) can call the /api/translate-embedded endpoint.
 // =========================================================================================
-app.get(["/subtitles/:type/:id.json", "/:config/subtitles/:type/:id.json"], async (req, res) => {
+app.get([
+  "/subtitles/:type/:id.json",
+  "/subtitles/:type/:id/:extra.json",
+  "/:config/subtitles/:type/:id.json",
+  "/:config/subtitles/:type/:id/:extra.json"
+], async (req, res) => {
   try {
-    const { type, id } = req.params;
+    const { type, id, extra } = req.params;
     const { lang, engine, apiKey, model, subdlKey, osKey, subsourceKey } = parseConfig(req.params.config);
 
     const idParts = (id || "").split(":");
@@ -246,7 +251,17 @@ app.get(["/subtitles/:type/:id.json", "/:config/subtitles/:type/:id.json"], asyn
     const season = idParts[1] ? parseInt(idParts[1], 10) : null;
     const episode = idParts[2] ? parseInt(idParts[2], 10) : null;
 
-    console.log(`\n[nifael AI] Subtitle query -> Type: ${type} | IMDb: ${imdbId} | S:${season || 0} E:${episode || 0} | Target: ${lang} | Engine: ${engine}`);
+    // Extract videoUrl from query or extra path parameter if passed by Stremio
+    let videoUrl = req.query.videoUrl || null;
+    if (!videoUrl && extra) {
+      try {
+        const extraParam = extra.replace(/\.json$/, "");
+        const extraParams = new URLSearchParams(extraParam);
+        videoUrl = extraParams.get("videoUrl") || null;
+      } catch (e) {}
+    }
+
+    console.log(`\n[nifael AI] Subtitle query -> Type: ${type} | IMDb: ${imdbId} | S:${season || 0} E:${episode || 0} | Target: ${lang} | Engine: ${engine}${videoUrl ? " | (Stream Attached 🎥)" : ""}`);
 
     const availableSubs = await searchAllSubtitles(imdbId, season, episode, { osKey, subdlKey, subsourceKey }, type);
 
@@ -266,6 +281,8 @@ app.get(["/subtitles/:type/:id.json", "/:config/subtitles/:type/:id.json"], asyn
     const stremioLang = mapToStremioLang(lang);
     const engineTag = engine === "gemini_live"
       ? "GEMINI LIVE ⚡"
+      : engine === "bing"
+      ? "BING"
       : (model ? `${engine.toUpperCase()}:${model}` : engine.toUpperCase());
 
     const stremioSubtitles = uniqueSubs.map((sub, idx) => {
@@ -285,6 +302,16 @@ app.get(["/subtitles/:type/:id.json", "/:config/subtitles/:type/:id.json"], asyn
         label: `[nifael AI: ${engineTag}] ${displaySource} (${fromLang} ➔ ${toLang}) - ${fileNameSnippet}`
       };
     });
+
+    // If stream URL is available and Gemini Live is selected, attach the Live Audio AI track
+    if (videoUrl && (engine === "gemini_live" || engine === "gemini")) {
+      stremioSubtitles.unshift({
+        id: `nifael_live_audio_${imdbId}`,
+        url: `${protocol}://${host}/api/live-audio-sub?targetLang=${lang}&apiKey=${encodeURIComponent(apiKey || "")}&model=${encodeURIComponent(model || "")}&videoUrl=${encodeURIComponent(videoUrl)}`,
+        lang: stremioLang,
+        label: `[nifael AI: ${engineTag}] Live Audio AI (Zero-Subtitle Stream) 🎙️`
+      });
+    }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Cache-Control", "public, max-age=3600");
