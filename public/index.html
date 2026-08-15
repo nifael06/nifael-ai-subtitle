@@ -1543,17 +1543,20 @@
       if (engine === "google") {
         keyGroup.style.display = "none";
         modelGroup.style.display = "none";
+        modelInput.value = "";
         engineBadge.textContent = "Google Free";
         engineBadge.className = "pill-badge badge-free";
       } else if (engine === "bing") {
         keyGroup.style.display = "none";
         modelGroup.style.display = "none";
+        modelInput.value = "";
         engineBadge.textContent = "Bing Free";
         engineBadge.className = "pill-badge badge-free";
       } else if (engine === "deepl") {
         keyGroup.style.display = "block";
         keyLabel.textContent = "DeepL API Key";
         modelGroup.style.display = "none";
+        modelInput.value = "";
         engineBadge.textContent = "Pro Accuracy";
         engineBadge.className = "pill-badge badge-ai";
       } else {

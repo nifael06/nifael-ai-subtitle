@@ -78,11 +78,12 @@ function parseConfig(configStr) {
         engine === "deepl" ? params.get("deeplKey") : ""
       );
 
+      const isAiEngine = engine === "gemini" || engine === "gemini_live" || engine === "openai";
       return {
         lang: params.get("lang") || defaults.lang,
         engine: engine,
         apiKey: params.get("apiKey") || engineKey || "",
-        model: params.get("model") || "",
+        model: isAiEngine ? (params.get("model") || "") : "",
         subdlKey: params.get("subdlKey") || "",
         osKey: params.get("osKey") || "",
         subsourceKey: params.get("subsourceKey") || ""
@@ -101,12 +102,13 @@ function parseConfig(configStr) {
         engine === "openai" ? parsed.openaiKey :
         engine === "deepl" ? parsed.deeplKey : ""
       );
+      const isAiEngine = engine === "gemini" || engine === "gemini_live" || engine === "openai";
 
       return {
         lang: parsed.lang || defaults.lang,
         engine: engine,
         apiKey: parsed.apiKey || engineKey || "",
-        model: parsed.model || "",
+        model: isAiEngine ? (parsed.model || "") : "",
         subdlKey: parsed.subdlKey || "",
         osKey: parsed.osKey || "",
         subsourceKey: parsed.subsourceKey || ""
@@ -128,12 +130,14 @@ app.get(["/", "/configure", "/:config/configure", "/:config"], (req, res, next) 
 // 2. Manifest Endpoint
 app.get(["/manifest.json", "/:config/manifest.json"], (req, res) => {
   const { lang, engine, model } = parseConfig(req.params.config);
-  const modelTag = model ? ` (${model})` : "";
+  const isAi = engine === "gemini" || engine === "gemini_live" || engine === "openai";
+  const modelTag = (isAi && model) ? ` (${model})` : "";
+  const engineDisplayName = (engine === "gemini" || engine === "gemini_live") ? "GEMINI" : engine.toUpperCase();
 
   const customManifest = {
     ...manifest,
-    name: `nifael AI subtitle [${lang.toUpperCase()} - ${engine.toUpperCase()}${modelTag}]`,
-    description: `AI-powered subtitle translation (${engine.toUpperCase()}${modelTag}) from OpenSubtitles, SubDL, and SubSource to ${lang.toUpperCase()}.`
+    name: `nifael AI subtitle [${lang.toUpperCase()} - ${engineDisplayName}${modelTag}]`,
+    description: `AI-powered subtitle translation (${engineDisplayName}${modelTag}) from OpenSubtitles, SubDL, and SubSource to ${lang.toUpperCase()}.`
   };
 
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -279,10 +283,12 @@ app.get([
     }
 
     const stremioLang = mapToStremioLang(lang);
-    const engineTag = engine === "gemini_live"
-      ? "GEMINI LIVE ⚡"
+    const engineTag = (engine === "gemini" || engine === "gemini_live")
+      ? (model ? `GEMINI (${model})` : "GEMINI")
       : engine === "bing"
       ? "BING"
+      : engine === "google"
+      ? "GOOGLE"
       : (model ? `${engine.toUpperCase()}:${model}` : engine.toUpperCase());
 
     const stremioSubtitles = uniqueSubs.map((sub, idx) => {
