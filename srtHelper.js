@@ -54,6 +54,25 @@ function timeToMs(timeStr) {
 }
 
 /**
+ * Convert numeric milliseconds to standard timestamp (HH:MM:SS,mmm or HH:MM:SS.mmm)
+ */
+function msToTimestamp(ms, isVtt = false) {
+  const totalMs = Math.max(0, Math.floor(Number(ms) || 0));
+  const hours = Math.floor(totalMs / 3600000);
+  const minutes = Math.floor((totalMs % 3600000) / 60000);
+  const seconds = Math.floor((totalMs % 60000) / 1000);
+  const millis = totalMs % 1000;
+
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+  const mmm = String(millis).padStart(3, "0");
+
+  const sep = isVtt ? "." : ",";
+  return `${hh}:${mm}:${ss}${sep}${mmm}`;
+}
+
+/**
  * Format timestamp strictly into WebVTT standard HH:MM:SS.mmm with dots
  */
 function formatVttTimestamp(ts) {
@@ -303,6 +322,7 @@ module.exports = {
   cuesToVtt,
   cuesToSrt,
   timeToMs,
+  msToTimestamp,
   formatVttTimestamp,
   formatSrtTimestamp,
   normalizeTimestamp,

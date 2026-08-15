@@ -5,10 +5,10 @@ const cors = require("cors");
 const axios = require("axios");
 const manifest = require("./manifest");
 const { searchAllSubtitles, downloadSubtitleText } = require("./providers");
-const { parseSrt, cleanCues, cuesToVtt, cuesToSrt, timeToMs, formatVttTimestamp, normalizeTimestamp } = require("./srtHelper");
+const { parseSrt, cleanCues, cuesToVtt, cuesToSrt, timeToMs, msToTimestamp, formatVttTimestamp, normalizeTimestamp } = require("./srtHelper");
 const { translateCues } = require("./translator");
 const { extractEmbeddedSubtitle, extractAudioChunk } = require("./embeddedExtractor");
-const { audioToSubtitleGemini, audioToOriginalTranscriptGemini, sanitizeGeminiModel } = require("./geminiStream");
+const { audioToSubtitleGemini, sanitizeGeminiModel } = require("./geminiStream");
 const cache = require("./cache");
 
 const app = express();
@@ -639,36 +639,12 @@ app.post("/api/video-to-sub", async (req, res) => {
       return res.status(500).json({ success: false, message: "Failed to extract audio channel from video stream. Please verify the URL is directly accessible." });
     }
 
-    // 2. Stage 1: Transcribe Native Spoken Audio with Precise Timestamps
-    let rawSrt = await audioToOriginalTranscriptGemini(audioBase64, key, selectedModel);
-    if (!rawSrt || !rawSrt.trim()) {
-      rawSrt = await audioToSubtitleGemini(audioBase64, lang, key, selectedModel);
-    }
+    // 2. Direct Speech-to-Translated Subtitle via Gemini 3.5 AI
+    const rawSrt = await audioToSubtitleGemini(audioBase64, lang, key, selectedModel);
     
     // 3. Parse and clean cues
     const parsedCues = rawSrt ? parseSrt(rawSrt) : [];
     let cleanedCues = cleanCues(parsedCues);
-
-    // Save original spoken text
-    cleanedCues.forEach((c) => {
-      c.originalText = c.text;
-    });
-
-    // 4. Stage 2: Contextual Subtitle Translation into target language
-    if (cleanedCues.length > 0 && lang) {
-      try {
-        const translated = await translateCues(cleanedCues, lang, "gemini", key, selectedModel);
-        if (translated && translated.length > 0) {
-          cleanedCues = cleanedCues.map((c, i) => ({
-            ...c,
-            originalText: c.originalText || c.text,
-            text: translated[i]?.text || c.text
-          }));
-        }
-      } catch (transErr) {
-        console.warn("[nifael AI Studio] Stage 2 translation notice:", transErr.message);
-      }
-    }
 
     // Apply offsetMs if provided (for progressive multi-segment stitching)
     const { offsetMs } = req.body || {};
@@ -680,13 +656,13 @@ app.post("/api/video-to-sub", async (req, res) => {
         const eMs = timeToMs(c.endTime) + baseOffset;
         return {
           ...c,
-          startTime: normalizeTimestamp(formatVttTimestamp(sMs)),
-          endTime: normalizeTimestamp(formatVttTimestamp(eMs))
+          startTime: msToTimestamp(sMs, false),
+          endTime: msToTimestamp(eMs, false)
         };
       });
     }
 
-    // 5. Build standard SRT and WebVTT outputs
+    // 4. Build standard SRT and WebVTT outputs
     const srtContent = cuesToSrt(cleanedCues);
     const vttContent = cuesToVtt(cleanedCues);
 

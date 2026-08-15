@@ -1462,9 +1462,8 @@
           <span>📂 Upload .SRT</span>
           <input type="file" id="srtFileInput" accept=".srt,.vtt,.txt" style="display:none;" onchange="handleFileUpload(event)">
         </label>
-        <button class="btn-primary" style="width:auto;" onclick="downloadCurrentSrt()">📥 Save Translated .SRT</button>
-        <button class="btn-secondary" style="width:auto;" onclick="downloadBilingualSrt()">🌟 Dual / Bilingual .SRT</button>
-        <button class="btn-secondary" style="width:auto;" onclick="downloadOriginalSrt()">🗣️ Original .SRT</button>
+        <button class="btn-primary" style="width:auto;" onclick="downloadCurrentSrt()">📥 Download .SRT</button>
+        <button class="btn-secondary" style="width:auto;" onclick="downloadCurrentVtt()">📥 Download .VTT</button>
         <button class="btn-secondary" style="width:auto;" onclick="addNewCue()">➕ Add Cue</button>
         <button class="btn-secondary" style="width:auto;" onclick="copySrtToClipboard()">📋 Copy</button>
         <button class="btn-icon-danger" style="width:auto; margin-left:auto;" onclick="clearAllCues()">🗑️ Clear</button>
@@ -2312,13 +2311,12 @@
                   entry.className = "live-cue-entry";
                   entry.innerHTML = `
                     <div class="live-cue-ts">⏱️ ${cue.startTime} ➔ ${cue.endTime}</div>
-                    ${cue.originalText && cue.originalText !== cue.text ? `<div class="live-cue-orig">🗣️ <em>${escapeHtml(cue.originalText)}</em></div>` : ''}
-                    <div class="live-cue-trans">🌐 ${escapeHtml(cue.text)}</div>
+                    <div class="live-cue-trans">💬 ${escapeHtml(cue.text)}</div>
                   `;
                   liveFeedBox.appendChild(entry);
                 });
                 liveFeedBox.scrollTop = liveFeedBox.scrollHeight;
-                if (liveFeedStats) liveFeedStats.textContent = `${totalCuesFound} Cues Transcribed`;
+                if (liveFeedStats) liveFeedStats.textContent = `${totalCuesFound} Subtitle Cues Generated`;
               }
 
               const percent = Math.round((completedChunks / maxChunks) * 100);
@@ -2345,7 +2343,7 @@
           throw new Error("No spoken dialogue detected in the video stream. Please verify the URL or audio track.");
         }
 
-        setStep(3, "done", `Step 3: Transcribed ${activeCues.length} dialogue cues.`);
+        setStep(3, "done", `Step 3: Generated ${activeCues.length} translated dialogue cues.`);
         setStep(4, "done", "Step 4: Subtitles ready!");
 
         document.getElementById("genResultSummary").textContent = `Generated ${activeCues.length} Cues (${targetLang.toUpperCase()}) via Gemini 3.5 AI!`;
@@ -2368,7 +2366,7 @@
     }
 
     // ==========================================
-    // Subtitle Studio & Cue Editor (Bilingual)
+    // Subtitle Studio & Cue Editor
     // ==========================================
     function renderCues() {
       const container = document.getElementById("cueListContainer");
@@ -2392,7 +2390,6 @@
         const start = cue.startTime || "00:00:00,000";
         const end = cue.endTime || "00:00:03,000";
         const text = cue.text || "";
-        const originalText = cue.originalText || "";
 
         html += `
           <div class="cue-card" id="cueCard_${idx}">
@@ -2408,11 +2405,6 @@
                 <button class="btn-icon-danger" title="Delete cue" onclick="deleteCue(${idx})">🗑️</button>
               </div>
             </div>
-            ${originalText && originalText !== text ? `
-              <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:0.35rem; font-style:italic; background:rgba(255,255,255,0.03); padding:0.25rem 0.55rem; border-radius:0.35rem; border-left: 2px solid #6366f1;">
-                🗣️ Spoken: ${escapeHtml(originalText)}
-              </div>
-            ` : ''}
             <textarea class="cue-textarea" rows="2" oninput="updateCueText(${idx}, this.value)">${escapeHtml(text)}</textarea>
           </div>
         `;
