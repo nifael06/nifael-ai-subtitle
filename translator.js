@@ -62,10 +62,21 @@ async function getBingSession() {
   }
 }
 
+function normalizeBingLang(lang) {
+  if (!lang) return "en";
+  const l = lang.toLowerCase().trim();
+  if (l === "zh-cn" || l === "zh" || l === "chinese" || l === "zh-hans") return "zh-Hans";
+  if (l === "zh-tw" || l === "zh-hk" || l === "zh-hant") return "zh-Hant";
+  if (l === "jw") return "jv";
+  if (l === "iw") return "he";
+  return lang;
+}
+
 /**
  * 1. Bing / Microsoft Translator Web API (Datacenter IP resistant)
  */
 async function translateWithBing(textBatch, targetLang, retries = 2) {
+  const bingLang = normalizeBingLang(targetLang);
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const session = await getBingSession();
@@ -73,7 +84,7 @@ async function translateWithBing(textBatch, targetLang, retries = 2) {
       const params = new URLSearchParams();
       params.append("fromLang", "auto-detect");
       params.append("text", textBatch);
-      params.append("to", targetLang);
+      params.append("to", bingLang);
       if (session.key && session.token) {
         params.append("key", session.key);
         params.append("token", session.token);
