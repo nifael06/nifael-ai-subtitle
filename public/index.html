@@ -761,6 +761,80 @@
     .progress-step-item.done {
       color: #34d399;
     }
+
+    /* Ultra-Clean URL Input Box & Format Tags */
+    .url-input-box {
+      display: flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.85rem;
+      padding: 0.35rem 0.5rem 0.35rem 0.85rem;
+      gap: 0.6rem;
+      transition: all 0.25s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+    .url-input-box:focus-within {
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.25);
+      background: rgba(15, 23, 42, 0.95);
+    }
+    .url-input-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #f8fafc;
+      font-size: 0.88rem;
+      padding: 0.5rem 0;
+      font-family: inherit;
+    }
+    .url-input-box input::placeholder {
+      color: #64748b;
+      font-size: 0.84rem;
+    }
+    .btn-paste-action {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.6rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-paste-action:hover {
+      background: rgba(99, 102, 241, 0.3);
+      color: #ffffff;
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+    .format-pills-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.65rem;
+    }
+    .format-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 0.45rem;
+      letter-spacing: 0.02em;
+    }
+    .format-pill.highlight {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+    }
   </style>
 </head>
 <body>
@@ -1131,17 +1205,30 @@
       <div class="section-header">
         <div class="section-title-wrap">
           <div class="section-icon">🎬</div>
-          <span class="section-title">Video Stream / Download Link</span>
+          <span class="section-title">Video Stream / Direct Link</span>
         </div>
         <span class="pill-badge badge-ai">Gemini 3.5 Live AI</span>
       </div>
 
       <div class="form-group">
         <label for="genVideoUrlInput">Direct Video Stream or Download URL</label>
-        <div class="control-wrap">
-          <input type="url" id="genVideoUrlInput" placeholder="https://domain.com/movie.mp4 or direct Debrid stream link">
+        <div class="url-input-box">
+          <span style="color: #64748b; font-size: 1rem;">🔗</span>
+          <input type="url" id="genVideoUrlInput" placeholder="Paste direct MP4, MKV, or Debrid stream link..." oninput="handleUrlInputChange()">
+          <button type="button" class="btn-paste-action" id="btnPasteUrl" onclick="pasteFromClipboard()">
+            <span>📋</span>
+            <span>Paste</span>
+          </button>
         </div>
-        <div class="hint">Supports direct MP4, MKV, WebM, and HTTP/HTTPS video streaming URLs.</div>
+        <div class="format-pills-row">
+          <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">Supported:</span>
+          <span class="format-pill highlight">MP4</span>
+          <span class="format-pill highlight">MKV</span>
+          <span class="format-pill">WebM</span>
+          <span class="format-pill">Debrid Stream</span>
+          <span class="format-pill">HTTP / HTTPS</span>
+          <span class="format-pill" style="margin-left: auto; color: #34d399; background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2);">⚡ Zero Full-Video Download</span>
+        </div>
       </div>
 
       <div class="form-group" style="margin-top: 1rem;">
@@ -1878,6 +1965,41 @@
       const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
       const ss = String(totalSec % 60).padStart(2, "0");
       return `${hh}:${mm}:${ss}.${mss}`;
+    }
+
+    // ==========================================
+    // Video URL Input Helpers
+    // ==========================================
+    async function pasteFromClipboard() {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            document.getElementById("genVideoUrlInput").value = text.trim();
+            handleUrlInputChange();
+          }
+        } else {
+          document.getElementById("genVideoUrlInput").focus();
+        }
+      } catch (e) {
+        document.getElementById("genVideoUrlInput").focus();
+      }
+    }
+
+    function handleUrlInputChange() {
+      const input = document.getElementById("genVideoUrlInput");
+      const btn = document.getElementById("btnPasteUrl");
+      if (!input || !btn) return;
+      if (input.value.trim().length > 0) {
+        btn.innerHTML = `<span>✕</span><span>Clear</span>`;
+        btn.onclick = () => {
+          input.value = "";
+          handleUrlInputChange();
+        };
+      } else {
+        btn.innerHTML = `<span>📋</span><span>Paste</span>`;
+        btn.onclick = pasteFromClipboard;
+      }
     }
 
     // ==========================================
