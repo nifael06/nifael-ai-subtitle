@@ -755,6 +755,7 @@
         <div class="control-wrap">
           <select id="engineSelect" onchange="handleEngineChange(); markUnsaved()">
             <option value="google" selected>Google Translate (Free, Instant, Zero Config)</option>
+            <option value="bing">Microsoft Bing Translator (Free, Anti-Rate Limit, Zero Config)</option>
             <option value="gemini_live">Google Gemini 3.5 Live Translate (Ultra-Fast Stream & Audio AI)</option>
             <option value="gemini">Google Gemini AI (High Context & Quality)</option>
             <option value="openai">OpenAI (GPT-4o / Custom Model)</option>
@@ -952,7 +953,12 @@
       if (engine === "google") {
         keyGroup.style.display = "none";
         modelGroup.style.display = "none";
-        engineBadge.textContent = "Free Instant";
+        engineBadge.textContent = "Google Free";
+        engineBadge.className = "pill-badge badge-free";
+      } else if (engine === "bing") {
+        keyGroup.style.display = "none";
+        modelGroup.style.display = "none";
+        engineBadge.textContent = "Bing Free";
         engineBadge.className = "pill-badge badge-free";
       } else if (engine === "deepl") {
         keyGroup.style.display = "block";

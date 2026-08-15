@@ -616,6 +616,8 @@ async function translateChunk(chunk, targetLang, engine, apiKey, customModel) {
     translatedBlock = await translateWithGemini(combinedText, targetLang, apiKey, customModel);
   } else if (engine === "openai") {
     translatedBlock = await translateWithOpenAI(combinedText, targetLang, apiKey, customModel);
+  } else if (engine === "bing") {
+    translatedBlock = await translateWithBing(combinedText, targetLang);
   } else {
     translatedBlock = await translateWithGoogle(combinedText, targetLang);
   }
@@ -632,21 +634,21 @@ async function translateCues(cues, targetLang = "en", engine = "google", apiKey 
   console.log(`[nifael AI] Translating ${cueList.length} cues to '${targetLang}' using: [${engine.toUpperCase()}] Model: [${customModel || "default"}]`);
 
   // Consolidated batch sizes: 100-140 cues reduces total HTTP requests to ~6-10 for full movies
-  const BATCH_SIZE = engine === "deepl" ? 50 : engine === "gemini_live" ? 100 : 120;
+  const BATCH_SIZE = engine === "deepl" ? 50 : engine === "gemini_live" ? 100 : engine === "bing" ? 100 : 120;
   const chunks = [];
 
   for (let i = 0; i < cueList.length; i += BATCH_SIZE) {
     chunks.push(cueList.slice(i, i + BATCH_SIZE));
   }
 
-  const CONCURRENCY = engine === "google" ? 2 : engine === "deepl" ? 5 : engine === "gemini_live" ? 6 : 4;
+  const CONCURRENCY = (engine === "google" || engine === "bing") ? 2 : engine === "deepl" ? 5 : engine === "gemini_live" ? 6 : 4;
   const results = new Array(chunks.length);
   let currentIndex = 0;
   let quotaExceeded = false;
   let quotaEngine = "";
 
   async function worker(workerId) {
-    if ((engine === "google" || quotaExceeded) && workerId > 0) {
+    if ((engine === "google" || engine === "bing" || quotaExceeded) && workerId > 0) {
       await sleep(workerId * 150);
     }
 
