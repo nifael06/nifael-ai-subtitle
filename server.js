@@ -599,6 +599,7 @@ app.post("/api/verify-key", async (req, res) => {
       const requestedModel = (model && typeof model === "string" && model.trim()) ? model.trim() : null;
       const candidateModels = [
         requestedModel,
+        "gemini-3.5-live-translate-preview",
         "gemini-3.5-flash-lite",
         "gemini-3.5-flash",
         "gemini-3.6-flash",

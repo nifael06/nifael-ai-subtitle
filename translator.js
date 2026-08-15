@@ -264,6 +264,7 @@ class QuotaExceededError extends Error {
 
 // Active Google Gemini 3.5+ models in order of priority
 const GEMINI_ACTIVE_MODELS = [
+  "gemini-3.5-live-translate-preview",
   "gemini-3.5-flash-lite",
   "gemini-3.5-flash",
   "gemini-3.6-flash",
@@ -275,12 +276,12 @@ const GEMINI_ACTIVE_MODELS = [
 let cachedGeminiWorkingModel = null;
 
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return cachedGeminiWorkingModel || "gemini-3.5-flash-lite";
+  if (!customModel || typeof customModel !== "string") return cachedGeminiWorkingModel || "gemini-3.5-live-translate-preview";
   const trimmed = customModel.trim();
-  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-flash-lite
+  // Auto-upgrade legacy models (1.0, 1.5, 2.0, 2.5) to gemini-3.5-live-translate-preview
   if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-flash-lite'.`);
-    return "gemini-3.5-flash-lite";
+    console.warn(`[Gemini AI] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate-preview'.`);
+    return "gemini-3.5-live-translate-preview";
   }
   return trimmed;
 }
@@ -293,11 +294,12 @@ async function translateWithGemini(textBatch, targetLang, apiKey, customModel, m
   if (!key) return await translateWithGoogle(textBatch, targetLang);
 
   const requestedModel = (customModel && typeof customModel === "string" && customModel.trim()) ? sanitizeGeminiModel(customModel) : null;
-  const initialModel = requestedModel || cachedGeminiWorkingModel || "gemini-3.5-flash-lite";
+  const initialModel = requestedModel || cachedGeminiWorkingModel || "gemini-3.5-live-translate-preview";
 
   const candidateModels = [
     initialModel,
     ...(requestedModel ? [requestedModel] : []),
+    "gemini-3.5-live-translate-preview",
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.6-flash",

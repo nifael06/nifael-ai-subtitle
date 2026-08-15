@@ -2,6 +2,7 @@ const axios = require("axios");
 
 // Fallback cascade for active Google Gemini 3.5+ models only
 const GEMINI_LIVE_MODELS = [
+  "gemini-3.5-live-translate-preview",
   "gemini-3.5-flash-lite",
   "gemini-3.5-flash",
   "gemini-3.6-flash",
@@ -24,12 +25,12 @@ let cachedWorkingModel = null;
  * Filter and sanitize model name to ensure only Gemini 3.5+ models are used
  */
 function sanitizeGeminiModel(customModel) {
-  if (!customModel || typeof customModel !== "string") return cachedWorkingModel || "gemini-3.5-flash-lite";
+  if (!customModel || typeof customModel !== "string") return cachedWorkingModel || "gemini-3.5-live-translate-preview";
   const trimmed = customModel.trim();
-  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to 3.5-flash-lite
+  // If user provided a legacy model (1.0, 1.5, 2.0, 2.5), auto-upgrade to gemini-3.5-live-translate-preview
   if (/gemini-(1\.|2\.)/i.test(trimmed)) {
-    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-flash-lite'.`);
-    return "gemini-3.5-flash-lite";
+    console.warn(`[Gemini Live] Legacy model '${customModel}' requested. Auto-upgrading to 'gemini-3.5-live-translate-preview'.`);
+    return "gemini-3.5-live-translate-preview";
   }
   return trimmed;
 }
@@ -44,12 +45,13 @@ async function streamTranslateGemini(textBatch, targetLang, apiKey, modelName = 
   }
 
   const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? sanitizeGeminiModel(modelName) : null;
-  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-flash-lite";
+  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-live-translate-preview";
 
   // Build list of Gemini 3.5+ models to try in sequence
   const candidateModels = [
     initialModel,
     ...(requestedModel ? [requestedModel] : []),
+    "gemini-3.5-live-translate-preview",
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.6-flash",
@@ -123,11 +125,12 @@ async function audioToSubtitleGemini(audioBase64, targetLang, apiKey, modelName 
   }
 
   const requestedModel = (modelName && typeof modelName === "string" && modelName.trim()) ? sanitizeGeminiModel(modelName) : null;
-  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-flash-lite";
+  const initialModel = requestedModel || cachedWorkingModel || "gemini-3.5-live-translate-preview";
 
   const candidateModels = [
     initialModel,
     ...(requestedModel ? [requestedModel] : []),
+    "gemini-3.5-live-translate-preview",
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.6-flash",
