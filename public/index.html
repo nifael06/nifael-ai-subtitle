@@ -1242,12 +1242,8 @@
 
       <div class="form-group">
         <label for="manifestUrlInput">Manifest URL (Click to copy)</label>
-        <div class="manifest-box-wrap" style="display:flex; gap:0.4rem; align-items:center;">
-          <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()" style="flex:1;">
-          <button class="btn-copy" id="randomizeBtn" onclick="randomizeManifestUrl()" title="Generate a fresh unique randomized manifest link" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); color: #c084fc;">
-            <span>🎲</span>
-            <span>Randomize</span>
-          </button>
+        <div class="manifest-box-wrap">
+          <input type="text" id="manifestUrlInput" readonly onclick="copyManifestUrl()">
           <button class="btn-copy" id="copyBtn" onclick="copyManifestUrl()">
             <span id="copyIcon">📋</span>
             <span id="copyText">Copy</span>
@@ -1736,6 +1732,7 @@
     }
 
     function copyManifestUrl() {
+      updateManifestUrl(true);
       const urlInput = document.getElementById("manifestUrlInput");
       const textToCopy = urlInput.value;
 
@@ -1755,6 +1752,7 @@
     }
 
     function copyShareUrl() {
+      updateManifestUrl(true);
       const shareUrl = getShareUrl();
       const btn = document.getElementById("shareBtn");
       const text = document.getElementById("shareText");
@@ -1932,18 +1930,21 @@
     }
 
     function saveAndInstall() {
+      updateManifestUrl(true);
       saveSettings();
       const manifestUrl = getManifestUrl().replace(/^https?:\/\//, "");
       window.location.href = `stremio://${manifestUrl}`;
     }
 
     function installAddon() {
+      updateManifestUrl(true);
       saveSettings();
       const manifestUrl = getManifestUrl().replace(/^https?:\/\//, "");
       window.location.href = `stremio://${manifestUrl}`;
     }
 
     function installWebAddon() {
+      updateManifestUrl(true);
       saveSettings();
       const manifestUrl = encodeURIComponent(getManifestUrl());
       window.open(`https://web.stremio.com/#/addons?addon=${manifestUrl}`, "_blank");
