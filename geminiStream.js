@@ -211,6 +211,12 @@ Rules:
         continue;
       }
 
+      if (status === 429) {
+        console.warn(`[Gemini Audio AI Rate Limit]: Sleeping 2500ms before retrying next candidate model...`);
+        await new Promise(r => setTimeout(r, 2500));
+        continue;
+      }
+
       console.error("[Gemini Audio-to-Subtitle Error]:", errorMsg);
       throw error;
     }

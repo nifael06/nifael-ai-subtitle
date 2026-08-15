@@ -2145,11 +2145,10 @@
           let nextChunkIndex = 0;
           let totalCuesFound = 0;
 
-          const CONCURRENCY = 3; // 3 parallel stream workers for 3x speedup!
+          const CONCURRENCY = 2; // 2 workers (stays within Gemini rate limits)
 
           async function chunkWorker(workerId) {
-            // Slight stagger on launch to prevent burst rate limit
-            if (workerId > 0) await new Promise(r => setTimeout(r, workerId * 300));
+            if (workerId > 0) await new Promise(r => setTimeout(r, workerId * 800));
 
             while (nextChunkIndex < maxChunks) {
               if (stopRequested) break;
@@ -2158,28 +2157,32 @@
               const startTs = msToSrtTs(currentOffsetSec * 1000).split(",")[0];
               const offsetMs = currentOffsetSec * 1000;
 
-              try {
-                const segCues = await fetchSubSegment({
-                  videoUrl,
-                  apiKey,
-                  targetLang,
-                  startTime: startTs,
-                  duration: CHUNK_SECONDS,
-                  offsetMs
-                });
-
-                chunkResults[idx] = segCues || [];
-                completedChunks++;
-                totalCuesFound += (segCues ? segCues.length : 0);
-
-                const percent = Math.round((completedChunks / maxChunks) * 100);
-                const minDone = (completedChunks * 1.5).toFixed(1);
-                setStep(3, "active", `⚡ Turbo Parallel: ${completedChunks}/${maxChunks} slices (~${minDone} mins | ${totalCuesFound} Cues generated)...`);
-              } catch (segErr) {
-                console.warn(`Segment ${idx} notice:`, segErr.message);
-                chunkResults[idx] = [];
-                completedChunks++;
+              let segCues = null;
+              for (let attempt = 0; attempt < 3; attempt++) {
+                if (stopRequested) break;
+                try {
+                  segCues = await fetchSubSegment({
+                    videoUrl,
+                    apiKey,
+                    targetLang,
+                    startTime: startTs,
+                    duration: CHUNK_SECONDS,
+                    offsetMs
+                  });
+                  break;
+                } catch (segErr) {
+                  console.warn(`Segment ${idx} attempt ${attempt + 1} notice:`, segErr.message);
+                  await new Promise(r => setTimeout(r, 3000));
+                }
               }
+
+              chunkResults[idx] = segCues || [];
+              completedChunks++;
+              totalCuesFound += (segCues ? segCues.length : 0);
+
+              const percent = Math.round((completedChunks / maxChunks) * 100);
+              const minDone = (completedChunks * 1.5).toFixed(1);
+              setStep(3, "active", `Gemini 3.5 AI: ${completedChunks}/${maxChunks} slices (~${minDone}m | ${totalCuesFound} Cues generated)...`);
             }
           }
 

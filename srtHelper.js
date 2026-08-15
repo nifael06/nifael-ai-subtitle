@@ -118,8 +118,8 @@ function cleanTextContent(rawText) {
 }
 
 /**
- * 1. Native zero-dependency, fault-tolerant SRT & WebVTT Parser
- * Supports standard multi-line SRT, WebVTT, and inline AI bracket formats [ 00:01:00,000 --> 00:01:05,000 ] Text
+ * 1. Native zero-dependency, fault-tolerant universal SRT & WebVTT Parser
+ * Sequentially parses standard multi-line SRT, single-newline SRT, WebVTT, and inline AI bracket formats
  */
 function parseSrt(srtContent) {
   if (!srtContent || typeof srtContent !== "string") return [];
@@ -130,81 +130,57 @@ function parseSrt(srtContent) {
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
 
+  const lines = normalized.split("\n");
   const cues = [];
+  let currentCue = null;
 
-  // 1. First attempt: Line-by-line parsing for inline AI format [ 00:16,569 --> 00:22,349 ] Dialogue
-  const rawLines = normalized.split("\n");
-  let hasInlineFormat = false;
-
-  for (let i = 0; i < rawLines.length; i++) {
-    const line = rawLines[i].trim();
-    if (!line || line.startsWith("WEBVTT") || line.startsWith("NOTE")) continue;
-
-    const inlineMatch = line.match(/^\[?\s*((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})\s*-->\s*((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})\s*\]?\s*[:-]?\s*(.*)$/);
-    if (inlineMatch && inlineMatch[3] && inlineMatch[3].trim()) {
-      hasInlineFormat = true;
-      const text = cleanTextContent(inlineMatch[3].trim());
-      if (text) {
-        cues.push({
-          id: String(cues.length + 1),
-          startTime: normalizeTimestamp(inlineMatch[1]),
-          endTime: normalizeTimestamp(inlineMatch[2]),
-          text
-        });
-      }
-    }
-  }
-
-  if (hasInlineFormat && cues.length > 0) {
-    cues.sort((a, b) => timeToMs(a.startTime) - timeToMs(b.startTime));
-    return cues;
-  }
-
-  // 2. Standard multi-line block parsing
-  const blocks = normalized.trim().split(/\n\s*\n/);
-
-  for (let b = 0; b < blocks.length; b++) {
-    const rawBlock = blocks[b].trim();
-    if (!rawBlock) continue;
-
-    if (rawBlock.startsWith("WEBVTT") || rawBlock.startsWith("NOTE") || rawBlock.startsWith("STYLE") || rawBlock.startsWith("REGION")) {
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i].trim();
+    if (!rawLine || rawLine.startsWith("WEBVTT") || rawLine.startsWith("NOTE") || rawLine.startsWith("STYLE") || rawLine.startsWith("REGION")) {
       continue;
     }
 
-    const lines = rawBlock.split("\n").map(l => (typeof l === "string" ? l.trim() : ""));
-    if (lines.length === 0) continue;
+    // Check if line contains a timestamp arrow '-->'
+    const timeMatch = rawLine.match(/(?:\[\s*)?((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})\s*-->\s*((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})(?:\s*\])?(?:\s*[:-]?\s*(.*))?$/);
 
-    let timeLineIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes("-->")) {
-        timeLineIndex = i;
-        break;
+    if (timeMatch) {
+      if (currentCue && currentCue.text) {
+        cues.push(currentCue);
+      }
+
+      const sTime = normalizeTimestamp(timeMatch[1]);
+      const eTime = normalizeTimestamp(timeMatch[2]);
+      const inlineText = timeMatch[3] ? cleanTextContent(timeMatch[3].trim()) : "";
+
+      currentCue = {
+        id: String(cues.length + 1),
+        startTime: sTime,
+        endTime: eTime,
+        text: inlineText
+      };
+      continue;
+    }
+
+    // Cue number line preceding a timestamp line (e.g. '1', '2')
+    if (/^\d+$/.test(rawLine)) {
+      if (i + 1 < lines.length && lines[i + 1].includes("-->")) {
+        continue;
       }
     }
 
-    if (timeLineIndex !== -1) {
-      const timeLine = lines[timeLineIndex];
-      const timeMatch = timeLine.match(/((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})\s*-->\s*((?:\d{1,2}:)?\d{1,2}:\d{2}[,\.]\d{1,3})/);
-
-      if (timeMatch) {
-        const startTime = normalizeTimestamp(timeMatch[1]);
-        const endTime = normalizeTimestamp(timeMatch[2]);
-        const textLines = lines.slice(timeLineIndex + 1);
-        const text = cleanTextContent(textLines.join("\n"));
-
-        if (text) {
-          cues.push({
-            id: String(cues.length + 1),
-            startTime,
-            endTime,
-            text
-          });
-        }
+    // Dialogue text for the current cue
+    if (currentCue) {
+      const cleaned = cleanTextContent(rawLine);
+      if (cleaned) {
+        currentCue.text = currentCue.text ? (currentCue.text + "\n" + cleaned) : cleaned;
       }
     }
   }
 
-  // Pre-sort cues chronologically
+  if (currentCue && currentCue.text) {
+    cues.push(currentCue);
+  }
+
   cues.sort((a, b) => timeToMs(a.startTime) - timeToMs(b.startTime));
   return cues;
 }
