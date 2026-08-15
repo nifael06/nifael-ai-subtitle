@@ -1264,14 +1264,30 @@
         <div class="hint">Get your free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent-indigo)">Google AI Studio</a>.</div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem;">
-        <div class="form-group">
-          <label for="genStartTimeInput">Start Offset</label>
-          <input type="text" id="genStartTimeInput" value="00:00:00" placeholder="00:00:00">
+      <!-- Transcription Mode: Full Video Default -->
+      <div class="form-group" style="margin-top: 1rem;">
+        <label>Transcription Length</label>
+        <div style="display: flex; gap: 0.65rem; margin-top: 0.25rem;">
+          <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); padding: 0.65rem 0.85rem; border-radius: 0.65rem; cursor: pointer; color: #ffffff; font-size: 0.82rem; font-weight: 600;">
+            <input type="radio" name="genRangeMode" value="full" checked onchange="toggleRangeInputs(false)">
+            <span>🌟 Full Video / Movie (Entire Length)</span>
+          </label>
+          <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.65rem 0.85rem; border-radius: 0.65rem; cursor: pointer; color: #94a3b8; font-size: 0.82rem; font-weight: 500;">
+            <input type="radio" name="genRangeMode" value="custom" onchange="toggleRangeInputs(true)">
+            <span>⏱️ Custom Clip Range</span>
+          </label>
         </div>
-        <div class="form-group">
-          <label for="genDurationInput">Duration (Seconds)</label>
-          <input type="number" id="genDurationInput" value="600" min="10" max="1800">
+      </div>
+
+      <!-- Optional Custom Range Inputs (Hidden by default) -->
+      <div id="customRangeFields" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); padding: 0.75rem; border-radius: 0.65rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="genStartTimeInput" style="font-size: 0.75rem;">Start Timestamp</label>
+          <input type="text" id="genStartTimeInput" value="00:00:00" placeholder="00:00:00" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="genDurationInput" style="font-size: 0.75rem;">Duration (Seconds)</label>
+          <input type="number" id="genDurationInput" value="600" min="10" placeholder="Full" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
         </div>
       </div>
 
@@ -2002,6 +2018,11 @@
       }
     }
 
+    function toggleRangeInputs(show) {
+      const el = document.getElementById("customRangeFields");
+      if (el) el.style.display = show ? "grid" : "none";
+    }
+
     // ==========================================
     // Video URL to .SRT AI Generator
     // ==========================================
@@ -2009,8 +2030,9 @@
       const videoUrl = document.getElementById("genVideoUrlInput").value.trim();
       const apiKey = document.getElementById("genApiKeyInput").value.trim();
       const targetLang = document.getElementById("genLangSelect").value;
-      const startTime = document.getElementById("genStartTimeInput").value.trim() || "00:00:00";
-      const duration = parseInt(document.getElementById("genDurationInput").value, 10) || 600;
+      const isCustom = document.querySelector('input[name="genRangeMode"]:checked')?.value === "custom";
+      const startTime = isCustom ? (document.getElementById("genStartTimeInput").value.trim() || "00:00:00") : "00:00:00";
+      const duration = isCustom ? (parseInt(document.getElementById("genDurationInput").value, 10) || 600) : "full";
 
       if (!videoUrl) {
         alert("Please enter a valid video stream or download URL.");

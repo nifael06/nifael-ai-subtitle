@@ -628,9 +628,10 @@ app.post("/api/video-to-sub", async (req, res) => {
     const lang = targetLang || "ms";
     const selectedModel = model || "gemini-3.5-live-translate-preview";
     const safeStart = typeof startTime === "string" && startTime.trim() ? startTime.trim() : "00:00:00";
-    const safeDur = duration ? Math.min(1800, Math.max(10, parseInt(duration, 10))) : 600;
+    const isFull = !duration || duration === "full" || duration === "0" || parseInt(duration, 10) === 0;
+    const safeDur = isFull ? null : parseInt(duration, 10);
 
-    console.log(`[nifael AI Studio] 🎬 Processing Video URL to Subtitle -> Target: ${lang} | Model: ${selectedModel} | Dur: ${safeDur}s | URL: ${videoUrl}`);
+    console.log(`[nifael AI Studio] 🎬 Processing Video URL to Subtitle -> Target: ${lang} | Model: ${selectedModel} | Mode: ${isFull ? "FULL VIDEO" : `${safeDur}s`} | URL: ${videoUrl}`);
 
     // 1. Extract audio chunk on the fly via ffmpeg
     const audioBase64 = await extractAudioChunk(videoUrl.trim(), safeStart, safeDur);

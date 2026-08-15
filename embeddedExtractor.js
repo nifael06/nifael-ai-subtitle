@@ -30,31 +30,41 @@ function extractEmbeddedSubtitle(videoStreamUrl, trackIndex = 0) {
 }
 
 /**
- * Extract a lightweight MP3 audio chunk from remote video URL for multimodal AI transcription
+ * Extract a lightweight MP3 audio stream from remote video URL for multimodal AI transcription
+ * If duration is null / 0 / "full", extracts the entire video's audio from start to finish!
  */
-function extractAudioChunk(videoStreamUrl, startTime = "00:00:00", duration = 600) {
+function extractAudioChunk(videoStreamUrl, startTime = "00:00:00", duration = null) {
   return new Promise((resolve) => {
     if (!videoStreamUrl || typeof videoStreamUrl !== "string") {
       return resolve(null);
     }
 
-    const safeDuration = isNaN(parseInt(duration, 10)) ? 600 : Math.min(1800, Math.max(10, parseInt(duration, 10)));
     const safeStart = typeof startTime === "string" && startTime.trim() ? startTime.trim() : "00:00:00";
     const args = [
       "-hide_banner",
-      "-loglevel", "error",
-      "-ss", safeStart,
-      "-i", videoStreamUrl,
-      "-t", String(safeDuration),
+      "-loglevel", "error"
+    ];
+
+    if (safeStart !== "00:00:00") {
+      args.push("-ss", safeStart);
+    }
+
+    args.push("-i", videoStreamUrl);
+
+    if (duration && !isNaN(parseInt(duration, 10)) && parseInt(duration, 10) > 0) {
+      args.push("-t", String(parseInt(duration, 10)));
+    }
+
+    args.push(
       "-vn",
       "-acodec", "libmp3lame",
       "-b:a", "64k",
       "-ar", "16000",
       "-f", "mp3",
       "-"
-    ];
+    );
 
-    execFile("ffmpeg", args, { encoding: "buffer", maxBuffer: 1024 * 1024 * 30, timeout: 60000 }, (error, stdout) => {
+    execFile("ffmpeg", args, { encoding: "buffer", maxBuffer: 1024 * 1024 * 150, timeout: 300000 }, (error, stdout) => {
       if (error || !stdout || stdout.length === 0) {
         if (error) console.warn("[nifael AI] extractAudioChunk error:", error.message);
         return resolve(null);
