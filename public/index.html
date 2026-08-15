@@ -1043,10 +1043,9 @@
         <label for="engineSelect">Translation Provider</label>
         <div class="control-wrap">
           <select id="engineSelect" onchange="handleEngineChange(); markUnsaved()">
-            <option value="google" selected>Google Translate (Free, Instant, Zero Config)</option>
-            <option value="bing">Microsoft Bing Translator (Free, Anti-Rate Limit, Zero Config)</option>
-            <option value="gemini_live">Google Gemini 3.5 Live Translate (Ultra-Fast Stream & Audio AI)</option>
-            <option value="gemini">Google Gemini AI (High Context & Quality)</option>
+            <option value="gemini" selected>Google Gemini 3.5 AI (Text & Live Audio AI - Recommended)</option>
+            <option value="google">Google Translate (Free, Instant, Zero Config)</option>
+            <option value="bing">Microsoft Bing Translator (Free, Zero Config)</option>
             <option value="openai">OpenAI (GPT-4o / Custom Model)</option>
             <option value="deepl">DeepL API (Pro Accuracy)</option>
           </select>
@@ -1467,34 +1466,20 @@
         engineBadge.textContent = "AI Powered";
         engineBadge.className = "pill-badge badge-ai";
 
-        if (engine === "gemini_live") {
-          engineBadge.textContent = "Gemini 3.5 Live ⚡";
+        if (engine === "gemini" || engine === "gemini_live") {
+          engineBadge.textContent = "Gemini 3.5 AI ⚡";
           keyLabel.textContent = "Google Gemini API Key";
-          modelInput.placeholder = "e.g. gemini-3.5-live-translate-preview, gemini-3.5-flash-lite, gemini-3.5-flash";
-          modelHint.textContent = "Default: Gemini 3.5 Live Translate (gemini-3.5-live-translate-preview). High-speed progressive streaming and zero-subtitle live audio transcription.";
+          modelInput.placeholder = "e.g. gemini-3.5-flash (Default / Live Audio & Text), gemini-3.5-pro";
+          modelHint.textContent = "Default: Gemini 3.5 Flash. High-speed streaming translation, deep contextual subtitle translation, and zero-subtitle live audio transcription.";
           const datalist = document.getElementById("modelPresets");
           if (datalist) {
             datalist.innerHTML = `
-              <option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview (Gemini 3.5 Live Translate Preview - Ultra-Fast)</option>
-              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Flash Lite)</option>
-              <option value="gemini-3.5-flash">gemini-3.5-flash (Gemini 3.5 Flash)</option>
+              <option value="gemini-3.5-flash">gemini-3.5-flash (Gemini 3.5 Flash - Best Speed & Precision)</option>
+              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Flash Lite - Ultra Fast)</option>
+              <option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview (Gemini 3.5 Live Translate)</option>
               <option value="gemini-3.6-flash">gemini-3.6-flash (Gemini 3.6 Flash)</option>
               <option value="gemini-3.7-flash">gemini-3.7-flash (Gemini 3.7 Flash)</option>
-              <option value="gemini-3.5-pro">gemini-3.5-pro (Gemini 3.5 Pro)</option>
-            `;
-          }
-        } else if (engine === "gemini") {
-          keyLabel.textContent = "Google Gemini API Key";
-          modelInput.placeholder = "e.g. gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash";
-          modelHint.textContent = "Default: gemini-3.5-flash-lite. Supports gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash and newer models.";
-          const datalist = document.getElementById("modelPresets");
-          if (datalist) {
-            datalist.innerHTML = `
-              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Default / Ultra Fast)</option>
-              <option value="gemini-3.5-flash">gemini-3.5-flash (Balanced Speed & Quality)</option>
-              <option value="gemini-3.6-flash">gemini-3.6-flash (Enhanced Multimodal Speed)</option>
-              <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Flash)</option>
-              <option value="gemini-3.5-pro">gemini-3.5-pro (Maximum Accuracy)</option>
+              <option value="gemini-3.5-pro">gemini-3.5-pro (Gemini 3.5 Pro - Maximum Reasoning)</option>
             `;
           }
         } else if (engine === "openai") {

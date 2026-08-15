@@ -600,7 +600,7 @@ async function translateChunk(chunk, targetLang, engine, apiKey, customModel) {
     return await translateWithDeepL(chunk, targetLang, apiKey);
   }
 
-  if (engine === "gemini_live") {
+  if (engine === "gemini" || engine === "gemini_live") {
     const { streamTranslateGemini } = require("./geminiStream");
     const DELIMITER = "\n<<<SEG>>>\n";
     const combinedText = chunk.map((cue) => (cue?.text ? cue.text.replace(/\n/g, " ") : "")).join(DELIMITER);
@@ -608,9 +608,15 @@ async function translateChunk(chunk, targetLang, engine, apiKey, customModel) {
       const translatedBlock = await streamTranslateGemini(combinedText, targetLang, apiKey, customModel);
       return parseTranslatedBlock(translatedBlock, chunk);
     } catch (e) {
-      console.warn("[Gemini Live Stream fallback]:", e.message);
-      const googleRes = await translateWithGoogle(combinedText, targetLang);
-      return parseTranslatedBlock(googleRes, chunk);
+      console.warn("[Gemini 3.5 AI stream fallback to REST]:", e.message);
+      try {
+        const geminiBlock = await translateWithGemini(combinedText, targetLang, apiKey, customModel);
+        return parseTranslatedBlock(geminiBlock, chunk);
+      } catch (gemErr) {
+        console.warn("[Gemini 3.5 AI REST fallback to Google]:", gemErr.message);
+        const googleRes = await translateWithGoogle(combinedText, targetLang);
+        return parseTranslatedBlock(googleRes, chunk);
+      }
     }
   }
 
@@ -618,9 +624,7 @@ async function translateChunk(chunk, targetLang, engine, apiKey, customModel) {
   const combinedText = chunk.map((cue) => (cue?.text ? cue.text.replace(/\n/g, " ") : "")).join(DELIMITER);
 
   let translatedBlock = "";
-  if (engine === "gemini") {
-    translatedBlock = await translateWithGemini(combinedText, targetLang, apiKey, customModel);
-  } else if (engine === "openai") {
+  if (engine === "openai") {
     translatedBlock = await translateWithOpenAI(combinedText, targetLang, apiKey, customModel);
   } else if (engine === "bing") {
     translatedBlock = await translateWithBing(combinedText, targetLang);
@@ -640,14 +644,15 @@ async function translateCues(cues, targetLang = "en", engine = "google", apiKey 
   console.log(`[nifael AI] Translating ${cueList.length} cues to '${targetLang}' using: [${engine.toUpperCase()}] Model: [${customModel || "default"}]`);
 
   // Consolidated batch sizes: 100-140 cues reduces total HTTP requests to ~6-10 for full movies
-  const BATCH_SIZE = engine === "deepl" ? 50 : engine === "gemini_live" ? 100 : engine === "bing" ? 100 : 120;
+  const isGemini = engine === "gemini" || engine === "gemini_live";
+  const BATCH_SIZE = engine === "deepl" ? 50 : isGemini ? 100 : engine === "bing" ? 100 : 120;
   const chunks = [];
 
   for (let i = 0; i < cueList.length; i += BATCH_SIZE) {
     chunks.push(cueList.slice(i, i + BATCH_SIZE));
   }
 
-  const CONCURRENCY = (engine === "google" || engine === "bing") ? 2 : engine === "deepl" ? 5 : engine === "gemini_live" ? 6 : 4;
+  const CONCURRENCY = (engine === "google" || engine === "bing") ? 2 : engine === "deepl" ? 5 : isGemini ? 6 : 4;
   const results = new Array(chunks.length);
   let currentIndex = 0;
   let quotaExceeded = false;
