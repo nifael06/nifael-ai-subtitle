@@ -291,10 +291,11 @@ app.get([
       ? "GOOGLE"
       : (model ? `${engine.toUpperCase()}:${model}` : engine.toUpperCase());
 
+    const isAi = engine === "gemini" || engine === "gemini_live" || engine === "openai";
     const stremioSubtitles = uniqueSubs.map((sub, idx) => {
       let renderUrl = `${protocol}://${host}/api/render-sub?targetLang=${lang}&engine=${engine}&subUrl=${encodeURIComponent(sub.downloadUrl)}`;
-      if (apiKey) renderUrl += `&apiKey=${encodeURIComponent(apiKey)}`;
-      if (model) renderUrl += `&model=${encodeURIComponent(model)}`;
+      if (apiKey && (isAi || engine === "deepl")) renderUrl += `&apiKey=${encodeURIComponent(apiKey)}`;
+      if (model && isAi) renderUrl += `&model=${encodeURIComponent(model)}`;
 
       const displaySource = sub.source || "Sub";
       const fromLang = (sub.lang || "EN").toUpperCase();
@@ -390,7 +391,8 @@ app.get("/api/render-sub", async (req, res) => {
 
     const lang = targetLang || "en";
     const selectedEngine = engine || "google";
-    const selectedModel = model || "";
+    const isAi = selectedEngine === "gemini" || selectedEngine === "gemini_live" || selectedEngine === "openai";
+    const selectedModel = isAi ? (model || "") : "";
     const cacheKey = `sub_${selectedEngine}_${selectedModel || "def"}_${lang}_${subUrl}`;
 
     // 1. Return cached WebVTT if available (instant response for seeking)
